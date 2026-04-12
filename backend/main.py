@@ -6,7 +6,8 @@ from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta
 import gspread
-from google.oauth2.service_account import Credentials
+# from google.oauth2.service_account import Credentials
+from google.oauth2 import service_account
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import numpy as np
