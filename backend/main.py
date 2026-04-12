@@ -1,6 +1,7 @@
 from fastapi import FastAPI, Query, HTTPException, Depends, Header
 from models import Base, User
 from database import engine, SessionLocal
+from sqlalchemy.orm import Session
 from passlib.context import CryptContext
 from jose import jwt
 from datetime import datetime, timedelta
@@ -72,9 +73,14 @@ scope = [
 ]
 
 
-import os, json
 
-creds_dict = json.loads(os.getenv("GOOGLE_CREDS"))
+creds_env = os.getenv("GOOGLE_CREDS")
+
+if not creds_env:
+    raise Exception("GOOGLE_CREDS missing in environment variables")
+
+creds_dict = json.loads(creds_env)
+
 creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
 
 
