@@ -81,15 +81,19 @@ if not creds_env:
 
 creds_dict = json.loads(creds_env)
 
-creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+# creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+# client=gspread.authorize(creds)
 
+def get_client():
+    creds_env = os.getenv("GOOGLE_CREDS")
 
+    if not creds_env:
+        raise Exception("GOOGLE_CREDS missing")
 
+    creds_dict = json.loads(creds_env)
+    creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
 
-
-client=gspread.authorize(creds)
-
-
+    return gspread.authorize(creds)
 
 
 
@@ -138,6 +142,7 @@ def change_password(data: dict, user=Depends(verify_token)):
 def get_data(year: int = Query(None), user=Depends(verify_token)):
     try:
         # 📥 Load data
+        client = get_client()
         sheet=client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0").sheet1
         data=sheet.get_all_records()
         df = pd.DataFrame(data)
