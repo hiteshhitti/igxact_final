@@ -1,12 +1,13 @@
 fastapi
 uvicorn
-pydantic
-python-dotenv
+gunicorn
 sqlalchemy
 psycopg2-binary
 passlib[bcrypt]
+bcrypt==4.0.1
 python-jose
-bcrypt
+python-dotenv
 gspread
 google-auth
 pandas
+numpy
