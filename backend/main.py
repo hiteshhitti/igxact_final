@@ -109,6 +109,23 @@ class LoginRequest(BaseModel):
     username: str
     password: str
 
+
+
+@app.post("/create-user")
+def create_user():
+    db: Session = SessionLocal()
+    try:
+        user = User(
+            username="admin",
+            password=hash_password("1234")
+        )
+        db.add(user)
+        db.commit()
+        return {"msg": "User created"}
+    finally:
+        db.close()
+
+
 @app.post("/login")
 def login(data: LoginRequest):
     db: Session = SessionLocal()
