@@ -63,7 +63,9 @@ scope = [
     "https://www.googleapis.com/auth/drive"
 ]
 
-creds=Credentials.from_service_account_file("igxact_key.json", scopes=scope)
+creds_json = json.loads(os.getenv("GOOGLE_CREDS"))
+# creds=Credentials.from_service_account_file("igxact_key.json", scopes=scope)
+creds = service_account.Credentials.from_service_account_info(creds_json, scopes=scope)
 
 client=gspread.authorize(creds)
 
