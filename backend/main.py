@@ -31,6 +31,10 @@ def verify_password(plain, hashed):
 
 
 SECRET_KEY = os.getenv("SECRET_KEY")
+
+if not SECRET_KEY:
+    raise Exception("SECRET_KEY missing")
+
 ALGORITHM = "HS256"
 
 
@@ -50,6 +54,22 @@ def verify_token(authorization: str = Header(None)):
 Base.metadata.create_all(bind=engine)
 
 
+def get_client():
+    try:
+        creds_env = os.getenv("GOOGLE_CREDS")
+
+        if not creds_env:
+            print("GOOGLE_CREDS NOT FOUND")
+            return None
+
+        creds_dict = json.loads(creds_env)
+        creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
+
+        return gspread.authorize(creds)
+
+    except Exception as e:
+        print("GOOGLE ERROR:", e)
+        return None
 
 
 def create_token(data: dict):
@@ -74,26 +94,14 @@ scope = [
 
 
 
-creds_env = os.getenv("GOOGLE_CREDS")
 
-if not creds_env:
-    raise Exception("GOOGLE_CREDS missing in environment variables")
 
-creds_dict = json.loads(creds_env)
+
 
 # creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
 # client=gspread.authorize(creds)
 
-def get_client():
-    creds_env = os.getenv("GOOGLE_CREDS")
 
-    if not creds_env:
-        raise Exception("GOOGLE_CREDS missing")
-
-    creds_dict = json.loads(creds_env)
-    creds = Credentials.from_service_account_info(creds_dict, scopes=scope)
-
-    return gspread.authorize(creds)
 
 
 
@@ -143,6 +151,11 @@ def get_data(year: int = Query(None), user=Depends(verify_token)):
     try:
         # 📥 Load data
         client = get_client()
+
+        if not client:
+            raise HTTPException(status_code=500, detail="Google Sheets connection failed")
+
+
         sheet=client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0").sheet1
         data=sheet.get_all_records()
         df = pd.DataFrame(data)
