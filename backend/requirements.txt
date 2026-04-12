@@ -10,4 +10,3 @@ bcrypt
 gspread
 google-auth
 pandas
-json
