@@ -66,7 +66,14 @@ scope = [
     "https://www.googleapis.com/auth/drive"
 ]
 
-creds_json = json.loads(os.getenv("GOOGLE_CREDS"))
+creds_raw = os.getenv("GOOGLE_CREDS")
+
+if not creds_raw:
+    raise Exception("GOOGLE_CREDS missing ❌")
+
+creds_json = json.loads(creds_raw)
+
+
 # creds=Credentials.from_service_account_file("igxact_key.json", scopes=scope)
 creds = service_account.Credentials.from_service_account_info(creds_json, scopes=scope)
 
