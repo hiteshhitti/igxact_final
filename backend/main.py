@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import numpy as np
 from pydantic import BaseModel
+import json
 
 app = FastAPI()
 
