@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Query, HTTPException, Depends, Header
+from fastapi import FastAPI, Query, HTTPException, Depends, Header, HTTPBearer, HTTPAuthorizationCredentials
 from models import Base, User
 from database import engine, SessionLocal
 from sqlalchemy.orm import Session
@@ -19,6 +19,8 @@ load_dotenv()
 
 app = FastAPI()
 
+security = HTTPBearer()
+
 
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -38,16 +40,9 @@ if not SECRET_KEY:
 ALGORITHM = "HS256"
 
 
-def verify_token(Authorization: str = Header(None)):
-    if not Authorization or not Authorization.startswith("Bearer "):
-        raise HTTPException(status_code=401, detail="No token")
-
-    token = Authorization.split(" ")[1]
-
-    try:
-        return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid token")
+def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
+    token = credentials.credentials
+    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
 
 
 
