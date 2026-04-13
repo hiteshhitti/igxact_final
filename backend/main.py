@@ -1,4 +1,5 @@
-from fastapi import FastAPI, Query, HTTPException, Depends, Header, HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi import FastAPI, Query, HTTPException, Depends, Header
 from models import Base, User
 from database import engine, SessionLocal
 from sqlalchemy.orm import Session
