@@ -27,7 +27,7 @@ export default function Home() {
 
   console.log("API URL:", process.env.NEXT_PUBLIC_API_URL);
   const token = sessionStorage.getItem("token");
-  console.log("LOGIN RESPONSE:", data);
+  
 
 if (!token || token === "undefined" || token === "null") {
   sessionStorage.removeItem("token");
@@ -94,6 +94,8 @@ if (!token || token === "undefined" || token === "null") {
   sessionStorage.removeItem("token");
   window.location.href = "/login";
 };
+
+const formatTrips = (v: any) => `${v ?? 0} trips`;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#020617] to-black text-white p-10 space-y-8">
@@ -253,7 +255,7 @@ if (!token || token === "undefined" || token === "null") {
             <Tooltip contentStyle={tooltipStyle} />
 
             <Bar dataKey="TotalRevenue" fill="#D85A30">
-              <LabelList dataKey="TripCount" position="right" formatter={(v:number)=>`${v} trips`} />
+              <LabelList dataKey="TripCount" position="right" formatter={formatTrips} />
             </Bar>
           </BarChart>
         </ResponsiveContainer>
@@ -354,7 +356,7 @@ if (!token || token === "undefined" || token === "null") {
                 ))}
               </Pie>
               <Tooltip contentStyle={tooltipStyle}
-                formatter={(v:number,n:string,p:any)=>[`₹${v.toLocaleString("en-IN")} (${p.payload.percent}%)`,n]} />
+                formatter={(v:any,n:string,p:any)=>[`₹${(v ?? 0).toLocaleString("en-IN")} (${p.payload.percent}%)`,n]} />
               <Legend />
             </PieChart>
           </ResponsiveContainer>
@@ -366,12 +368,12 @@ if (!token || token === "undefined" || token === "null") {
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={data.monthly_payment||[]}>
               <XAxis dataKey="MonthNum" stroke="#aaa"
-                tickFormatter={(v)=>
+                tickFormatter={(v:any)=>
                     ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][v-1]
                     } />
               <YAxis stroke="#aaa"/>
               <Tooltip contentStyle={tooltipStyle}
-                formatter={(v:number)=>`₹${v.toLocaleString("en-IN")}`} />
+                formatter={(v:any)=>`₹${(v ?? 0).toLocaleString("en-IN")}`} />
               <Legend />
 
               <Bar dataKey="Cash" stackId="a" fill="#EF9F27" />
