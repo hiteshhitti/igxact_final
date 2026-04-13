@@ -38,11 +38,11 @@ if not SECRET_KEY:
 ALGORITHM = "HS256"
 
 
-def verify_token(authorization: str = Header(None)):
-    if not authorization or not authorization.startswith("Bearer "):
+def verify_token(Authorization: str = Header(None)):
+    if not Authorization or not Authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="No token")
 
-    token = authorization.split(" ")[1]
+    token = Authorization.split(" ")[1]
 
     try:
         return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
