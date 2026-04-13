@@ -356,7 +356,7 @@ const formatTrips = (v: any) => `${v ?? 0} trips`;
                 ))}
               </Pie>
               <Tooltip contentStyle={tooltipStyle}
-                formatter={(v:any,n:string,p:any)=>[`₹${(v ?? 0).toLocaleString("en-IN")} (${p.payload.percent}%)`,n]} />
+                formatter={(v:any,n:any,p:any)=>[`₹${(v ?? 0).toLocaleString("en-IN")} (${p.payload.percent}%)`,n]} />
               <Legend />
             </PieChart>
           </ResponsiveContainer>
