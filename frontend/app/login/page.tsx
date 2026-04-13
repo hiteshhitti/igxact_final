@@ -9,7 +9,7 @@ export default function LoginPage() {
   const handleLogin = async () => {
   try {
     const res = await fetch(
-      process.env.NEXT_PUBLIC_API_URL + "/login",
+      process.env.NEXT_PUBLIC_API_URL + "/backend/login",
       {
         method: "POST",
         headers: {
