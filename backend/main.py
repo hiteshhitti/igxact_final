@@ -268,6 +268,14 @@ def get_data(year: int = Query(None), user=Depends(verify_token)):
         cash_total = df['Total Cash'].sum()
         bank_total = df['Total Bank'].sum()
 
+        df["TotalExpense"] = (
+            df["Fuel"] +
+            df["Tolls & Taxes"] +
+            df["Parking"] +
+            df["Driver Allowance"] +
+            df["Sales Commission"]
+        )
+
         monthly = df.groupby('MonthNum').agg(
             Month=('MonthName', 'first'),
             Trips=('Deal Price', 'count'),
