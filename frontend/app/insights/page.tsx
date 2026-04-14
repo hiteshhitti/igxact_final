@@ -132,11 +132,13 @@ const extra = data?.extra_insights || {};
     "bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-xl border border-white/10 p-6 rounded-2xl shadow-xl hover:scale-[1.03] transition";
 
   return (
-    
-    <div className="min-h-screen bg-gradient-to-br from-black via-[#020617] to-[#0f172a] text-white p-10">
+    <>
+    <Navbar />
+    <div className="min-h-screen bg-gradient-to-br from-black via-[#020617] to-[#0f172a] text-white p-10 pt-24">
+      
         {isLoading && (
   <div className="absolute inset-0 flex items-center justify-center bg-black z-50">
-    <Navbar />
+    
     <p className="animate-pulse text-white text-lg">Loading Insights...</p>
   </div>
 )}
@@ -162,9 +164,6 @@ const extra = data?.extra_insights || {};
     ))}
   </select>
 </div>
-      <button onClick={() => push("/")}>
-        🏠 Dashboard
-      </button>
       <h1 className="text-4xl font-bold mb-8">🔥 AI Insights</h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -227,6 +226,6 @@ const extra = data?.extra_insights || {};
   </ResponsiveContainer>
 </div>
     </div>
-    
+    </>
   );
 }
