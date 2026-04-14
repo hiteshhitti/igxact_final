@@ -1,5 +1,5 @@
 "use client";
-
+import Navbar from "@/components/Navbar";
 import { useEffect, useState } from "react";
 import { useSmoothRouter } from "@/components/UseSmoothRouter";
 import {
@@ -100,8 +100,9 @@ const monthTargets = data?.month_targets || [];
 
 
   return (
+    
     <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#020617] to-black text-white p-10 space-y-8">
-
+<Navbar />
       <h1 className="text-3xl font-bold">Dashboard 🔥</h1>
       <div className="flex justify-end gap-4 flex-wrap">
 

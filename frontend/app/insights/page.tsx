@@ -1,5 +1,6 @@
 "use client";
 
+import Navbar from "@/components/Navbar";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useSmoothRouter } from "@/components/UseSmoothRouter";
@@ -135,6 +136,7 @@ const extra = data?.extra_insights || {};
     <div className="min-h-screen bg-gradient-to-br from-black via-[#020617] to-[#0f172a] text-white p-10">
         {isLoading && (
   <div className="absolute inset-0 flex items-center justify-center bg-black z-50">
+    <Navbar />
     <p className="animate-pulse text-white text-lg">Loading Insights...</p>
   </div>
 )}
