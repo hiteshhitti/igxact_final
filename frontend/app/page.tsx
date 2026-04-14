@@ -96,11 +96,53 @@ if (!token || token === "undefined" || token === "null") {
 };
 
 const formatTrips = (v: any) => `${v ?? 0} trips`;
+const monthTargets = data?.month_targets || [];
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#020617] to-black text-white p-10 space-y-8">
 
       <h1 className="text-3xl font-bold">Dashboard 🔥</h1>
+      <div className="flex justify-end gap-4 flex-wrap">
+
+  {(monthTargets || []).map((m:any, i:number) => (
+    <div
+      key={i}
+      className={`p-4 rounded-xl w-[180px] transition-all duration-300 
+      ${m.status === "green"
+        ? "bg-green-500/20 border border-green-400"
+        : "bg-red-500/20 border border-red-400"}`}
+    >
+      <p className="text-sm text-gray-300">{m.month}</p>
+
+      <h2 className="text-lg font-bold">
+        ₹ {m.revenue.toLocaleString("en-IN")}
+      </h2>
+
+      <p className="text-xs text-gray-400">
+        {m.trips} trips
+      </p>
+
+      <p className="text-xs mt-1">
+        Target: ₹ {m.target.toLocaleString("en-IN")}
+      </p>
+
+      {/* progress bar */}
+      <div className="h-2 bg-white/10 rounded mt-2">
+        <div
+          className={`h-2 rounded ${
+            m.status === "green" ? "bg-green-400" : "bg-red-400"
+          }`}
+          style={{
+            width: `${Math.min((m.revenue / m.target) * 100, 100)}%`
+          }}
+        />
+      </div>
+
+    </div>
+  ))}
+
+</div>
 
       <div className="mb-4 flex gap-4 items-center">
   <label className="text-sm text-gray-300">Year:</label>

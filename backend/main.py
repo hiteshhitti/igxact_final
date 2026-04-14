@@ -483,10 +483,41 @@ def get_data(year: int = Query(None), user=Depends(verify_token)):
                 "profit": float(row["Net Profit (without Driver Salary)"])
             })
 
+        current_month = datetime.now().month
+
+        target = 250000
+
+        month_targets = []
+
+        for i in range(3):
+            m = current_month + i
+            if m > 12:
+                m = m - 12
+
+            month_data = monthly[monthly["MonthNum"] == m]
+
+            if len(month_data) > 0:
+                revenue = float(month_data.iloc[0]["Revenue"])
+                trips = int(month_data.iloc[0]["Trips"])
+                name = month_data.iloc[0]["Month"]
+            else:
+                revenue = 0
+                trips = 0
+                name = datetime(2024, m, 1).strftime("%B")
+
+            month_targets.append({
+                "month": name,
+                "revenue": revenue,
+                "trips": trips,
+                "target": target,
+                "status": "green" if revenue >= target else "red"
+            })
+
         # ✅ Response
         return {
             "success": True,
             "years": years,
+            "month_targets": month_targets,
             "kpi": {
                 "total_revenue": round(float(total_revenue), 2),
                 "total_profit": round(float(total_profit), 2),
