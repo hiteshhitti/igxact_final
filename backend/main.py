@@ -160,7 +160,10 @@ def change_password(data: dict, user=Depends(verify_token)):
         db.close()
 
 @app.get("/data")
-def get_data(year: int = Query(None), user=Depends(verify_token)):
+def get_data(year: int = Query(None), 
+             user=Depends(verify_token),
+             month: int = Query(None), 
+             ):
     try:
         # 📥 Load data
         client = get_client()
@@ -228,7 +231,8 @@ def get_data(year: int = Query(None), user=Depends(verify_token)):
         
         df = df[df['Year'] == year]
         
-        
+        if month:
+            df = df[df['MonthNum'] == month]
 
        
 
@@ -281,6 +285,7 @@ def get_data(year: int = Query(None), user=Depends(verify_token)):
             Trips=('Deal Price', 'count'),
             Revenue=('Deal Price', 'sum'),
             NetProfit=('Net Profit (without Driver Salary)', 'sum'),
+            TotalExpense=('TotalExpense', 'sum'),
             AvgMargin=('Profit Percentage', 'mean'),
             RevPerTrip=('Deal Price', 'mean')
         ).reset_index()
@@ -303,6 +308,7 @@ def get_data(year: int = Query(None), user=Depends(verify_token)):
 
         cost_cols = ["Fuel", "Tolls & Taxes", "Parking", "Driver Allowance", "Sales Commission"]
 
+        
 
         required_cols = cost_cols + ["Deal Price", "Number of Days"] 
         for col in required_cols:

@@ -10,26 +10,36 @@ export default function MonthlyPage() {
   const [data, setData] = useState<any>(null);
   const [year, setYear] = useState<number | null>(null);
   const [years, setYears] = useState<number[]>([]);
+  const [month, setMonth] = useState<number | null>(null);
 
-  useEffect(() => {
-    const token = sessionStorage.getItem("token");
 
-    let url = process.env.NEXT_PUBLIC_API_URL + "/data";
-    if (year) url += `?year=${year}`;
 
-    fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then(res => res.json())
-      .then(res => {
-        setData(res);
-        setYears(res.years || []);
-      });
-  }, [year]);
+useEffect(() => {
+  const token = sessionStorage.getItem("token");
+
+  let url = process.env.NEXT_PUBLIC_API_URL + "/data";
+
+  if (year) url += `?year=${year}`;
+  if (month) url += `${year ? "&" : "?"}month=${month}`;
+
+  fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+    .then(res => res.json())
+    .then(res => {
+      setData(res);
+      setYears(res.years || []);
+    });
+}, [year, month]);
 
   if (!data) return <div className="text-white p-10">Loading...</div>;
+
+  const totalRevenue = data.monthly.reduce((a:any,b:any)=>a+b.Revenue,0);
+  const totalTrips = data.monthly.reduce((a:any,b:any)=>a+b.Trips,0);
+  const totalProfit = data.monthly.reduce((a:any,b:any)=>a+b.NetProfit,0);
+  const totalExpense = totalRevenue - totalProfit;
 
   return (
     <div className="min-h-screen bg-black text-white p-10 space-y-6">
@@ -48,33 +58,45 @@ export default function MonthlyPage() {
           <option value="">Latest</option>
           {years.map(y => <option key={y}>{y}</option>)}
         </select>
+        <select
+          value={month || ""}
+          onChange={(e) => setMonth(e.target.value ? Number(e.target.value) : null)}
+          className="bg-black border px-3 py-2"
+        >
+          <option value="">All Months</option>
+          {[
+            "Jan","Feb","Mar","Apr","May","Jun",
+            "Jul","Aug","Sep","Oct","Nov","Dec"
+          ].map((m, i) => (
+            <option key={i} value={i+1}>{m}</option>
+          ))}
+        </select>
       </div>
 
       {/* KPI TABLE */}
-      <div className="overflow-auto">
-        <table className="w-full border border-white/20">
-          <thead className="bg-white/10">
-            <tr>
-              <th>Month</th>
-              <th>Trips</th>
-              <th>Revenue</th>
-              <th>Expense</th>
-              <th>Profit</th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.monthly.map((m:any,i:number)=>(
-              <tr key={i} className="text-center border-t border-white/10">
-                <td>{m.Month}</td>
-                <td>{m.Trips}</td>
-                <td>₹ {m.Revenue}</td>
-                <td>₹ {m.TotalExpense}</td>
-                <td>₹ {m.NetProfit}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+    <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+
+      <div className="bg-blue-500/20 p-6 rounded-xl">
+        <p className="text-gray-300">Revenue</p>
+        <h2 className="text-2xl font-bold">₹ {totalRevenue}</h2>
       </div>
+
+      <div className="bg-purple-500/20 p-6 rounded-xl">
+        <p className="text-gray-300">Trips</p>
+        <h2 className="text-2xl font-bold">{totalTrips}</h2>
+      </div>
+
+      <div className="bg-red-500/20 p-6 rounded-xl">
+        <p className="text-gray-300">Expense</p>
+        <h2 className="text-2xl font-bold">₹ {totalExpense}</h2>
+      </div>
+
+      <div className="bg-green-500/20 p-6 rounded-xl">
+        <p className="text-gray-300">Profit</p>
+        <h2 className="text-2xl font-bold">₹ {totalProfit}</h2>
+      </div>
+
+    </div>
 
       {/* CHART */}
       <div className="bg-white/5 p-6 rounded-xl">
