@@ -162,6 +162,8 @@ def change_password(data: dict, user=Depends(verify_token)):
 @app.post("/add-trip")
 def add_trip(data: dict, user=Depends(verify_token)):
     client = get_client()
+    if not client:
+        raise HTTPException(status_code=500, detail="Google client failed")
     sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0").sheet1
 
     # generate trip_id
@@ -173,7 +175,7 @@ def add_trip(data: dict, user=Depends(verify_token)):
     row = []
 
     for col in headers:
-        if col == "trip_id":
+        if col.strip().lower() == "trip id":
             row.append(trip_id)
         else:
             row.append(data.get(col, ""))
@@ -187,6 +189,8 @@ def add_trip(data: dict, user=Depends(verify_token)):
 def get_columns(user=Depends(verify_token)):
     try:
         client = get_client()
+        if not client:
+            raise HTTPException(status_code=500, detail="Google client failed")
         sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0").sheet1
 
         headers = sheet.row_values(1)
@@ -205,6 +209,8 @@ def get_trips(
     user=Depends(verify_token)
 ):
     client = get_client()
+    if not client:
+        raise HTTPException(status_code=500, detail="Google client failed")
     sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0").sheet1
 
     data = sheet.get_all_records()
@@ -223,12 +229,28 @@ def get_trips(
 @app.put("/update-trip/{trip_id}")
 def update_trip(trip_id: int, data: dict, user=Depends(verify_token)):
     client = get_client()
+    if not client:
+        raise HTTPException(status_code=500, detail="Google client failed")
     sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0").sheet1
 
     records = sheet.get_all_records()
 
     for i, row in enumerate(records):
-        if int(row.get("trip_id", 0)) == trip_id:
+        trip_key = None
+
+        for key in row.keys():
+            if key.strip().lower() == "trip id":
+                trip_key = key
+                break
+
+        value = row.get(trip_key, 0)
+
+        try:
+            value = int(value)
+        except:
+            value = 0
+
+        if trip_key and value == trip_id:
             row_index = i + 2  # header skip
 
             sheet.update(f"B{row_index}", data.get("Customer Name"))
