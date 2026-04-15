@@ -168,18 +168,17 @@ def add_trip(data: dict, user=Depends(verify_token)):
     existing = sheet.get_all_records()
     trip_id = len(existing) + 1
 
-    row = [
-        trip_id,
-        data.get("Customer Name"),
-        data.get("Trip From"),
-        data.get("Trip TO"),
-        data.get("Start Date"),
-        data.get("Deal Price"),
-        data.get("Fuel"),
-        data.get("Driver Allowance"),
-    ]
+    headers = sheet.row_values(1)
 
-    sheet.append_row(row)
+    row = []
+
+    for col in headers:
+        if col == "trip_id":
+            row.append(trip_id)
+        else:
+            row.append(data.get(col, ""))
+
+    sheet.append_row(row, value_input_option="USER_ENTERED")
 
     return {"msg": "Trip added", "trip_id": trip_id}
 
@@ -219,7 +218,7 @@ def get_trips(
     if end:
         df = df[df['Start Date'] <= pd.to_datetime(end)]
 
-    return df.to_dict(orient="records")
+    return df.fillna("").to_dict(orient="records")
 
 @app.put("/update-trip/{trip_id}")
 def update_trip(trip_id: int, data: dict, user=Depends(verify_token)):
@@ -229,7 +228,7 @@ def update_trip(trip_id: int, data: dict, user=Depends(verify_token)):
     records = sheet.get_all_records()
 
     for i, row in enumerate(records):
-        if int(row["trip_id"]) == trip_id:
+        if int(row.get("trip_id", 0)) == trip_id:
             row_index = i + 2  # header skip
 
             sheet.update(f"B{row_index}", data.get("Customer Name"))
@@ -562,7 +561,7 @@ def get_data(year: int = Query(None),
         else:
             best_month = "N/A"
             best_month_revenue = 0
-    
+
 
         best_vehicle = veh.index[0]
         best_vehicle_revenue = float(veh.iloc[0]['TotalRevenue'])
