@@ -587,7 +587,7 @@ def get_data(year: int = Query(None),
         if not monthly.empty:
             best_month_row = monthly.loc[monthly['Revenue'].idxmax()]
             best_month = best_month_row['Month']
-            best_month_revenue = float(best_month_row['Revenue'])
+            best_month_revenue = float(best_month_row.get('Revenue', 0) or 0)
         else:
             best_month = "N/A"
             best_month_revenue = 0
@@ -595,8 +595,12 @@ def get_data(year: int = Query(None),
 
         if len(veh) > 0:
             best_vehicle = veh.index[0]
-            best_vehicle_revenue = float(veh.iloc[0]['TotalRevenue'])
-            best_vehicle_margin = float(veh.iloc[0]['AvgMargin'])
+
+            rev = veh.iloc[0].get('TotalRevenue', 0)
+            margin = veh.iloc[0].get('AvgMargin', 0)
+
+            best_vehicle_revenue = float(rev or 0)
+            best_vehicle_margin = float(margin or 0)
         else:
             best_vehicle = "N/A"
             best_vehicle_revenue = 0
@@ -607,7 +611,7 @@ def get_data(year: int = Query(None),
 
         if len(custs) > 0:
             best_cust = custs.index[0]
-            best_cust_revenue = float(custs.iloc[0])
+            best_cust_revenue = float(custs.iloc[0] or 0)
         else:
             best_cust = "N/A"
             best_cust_revenue = 0
