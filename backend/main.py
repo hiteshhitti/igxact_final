@@ -186,12 +186,17 @@ def add_trip(data: dict, user=Depends(verify_token)):
 
 @app.get("/columns")
 def get_columns(user=Depends(verify_token)):
-    client = get_client()
-    sheet = client.open_by_url("YOUR_SHEET_URL").sheet1
+    try:
+        client = get_client()
+        sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0").sheet1
 
-    headers = sheet.row_values(1)
+        headers = sheet.row_values(1)
 
-    return {"columns": headers}
+        return headers or []
+
+    except Exception as e:
+        print("COLUMNS ERROR:", e)
+        raise HTTPException(status_code=500, detail="Columns fetch failed")
 
 
 @app.get("/trips")
@@ -206,6 +211,7 @@ def get_trips(
     data = sheet.get_all_records()
     df = pd.DataFrame(data)
 
+    # df['Start Date'] = pd.to_datetime(df['Start Date'], errors='coerce')
     df['Start Date'] = pd.to_datetime(df['Start Date'], errors='coerce')
 
     if start:
@@ -556,9 +562,7 @@ def get_data(year: int = Query(None),
         else:
             best_month = "N/A"
             best_month_revenue = 0
-
-        best_month = best_month_row['Month']
-        best_month_revenue = float(best_month_row['Revenue'])
+    
 
         best_vehicle = veh.index[0]
         best_vehicle_revenue = float(veh.iloc[0]['TotalRevenue'])
