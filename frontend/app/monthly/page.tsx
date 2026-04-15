@@ -11,34 +11,50 @@ export default function MonthlyPage() {
   const [year, setYear] = useState<number | null>(null);
   const [years, setYears] = useState<number[]>([]);
   const [month, setMonth] = useState<number | null>(null);
+  const [mode, setMode] = useState<"all" | "year" | "month">("all");
 
 
 
-useEffect(() => {
-  const token = sessionStorage.getItem("token");
+  useEffect(() => {
+    let url = process.env.NEXT_PUBLIC_API_URL + "/data";
 
-  let url = process.env.NEXT_PUBLIC_API_URL + "/data";
+    if (mode === "year" && year) {
+      url += `?year=${year}`;
+    }
 
-  if (year) url += `?year=${year}`;
-  if (month) url += `${year ? "&" : "?"}month=${month}`;
+    if (mode === "month" && year && month) {
+      url += `?year=${year}&month=${month}`;
+    }
 
-  fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
-    .then(res => res.json())
-    .then(res => {
-      setData(res);
-      setYears(res.years || []);
-    });
-}, [year, month]);
+    const token = sessionStorage.getItem("token");
+
+    fetch(url, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(res => res.json())
+      .then(res => {
+        setData(res);
+        setYears(res.years || []);
+      });
+
+  }, [mode, year, month]); 
 
   if (!data) return <div className="text-white p-10">Loading...</div>;
 
-  const totalRevenue = data.monthly.reduce((a:any,b:any)=>a+b.Revenue,0);
-  const totalTrips = data.monthly.reduce((a:any,b:any)=>a+b.Trips,0);
-  const totalProfit = data.monthly.reduce((a:any,b:any)=>a+b.NetProfit,0);
+  const monthlyData = data.monthly || [];
+
+  // const totalRevenue = data.monthly.reduce((a:any,b:any)=>a+b.Revenue,0);
+  // const totalTrips = data.monthly.reduce((a:any,b:any)=>a+b.Trips,0);
+  // const totalProfit = data.monthly.reduce((a:any,b:any)=>a+b.NetProfit,0);
+  // const totalExpense = totalRevenue - totalProfit;
+
+  
+
+  const totalRevenue = monthlyData.reduce((a:any,b:any)=>a+b.Revenue,0);
+  const totalTrips = monthlyData.reduce((a:any,b:any)=>a+b.Trips,0);
+  const totalProfit = monthlyData.reduce((a:any,b:any)=>a+b.NetProfit,0);
   const totalExpense = totalRevenue - totalProfit;
 
   return (
@@ -48,7 +64,7 @@ useEffect(() => {
       <h1 className="text-3xl font-bold">📅 Monthly Analysis</h1>
 
       {/* YEAR FILTER */}
-      <div className="flex gap-4 items-center">
+      {/* <div className="flex gap-4 items-center">
         <label>Year:</label>
         <select
           value={year || ""}
@@ -71,8 +87,55 @@ useEffect(() => {
             <option key={i} value={i+1}>{m}</option>
           ))}
         </select>
-      </div>
+      </div> */}
 
+      <div className="flex gap-4 items-center">
+
+  {/* MODE */}
+  <select
+    value={mode}
+    onChange={(e) => setMode(e.target.value as any)}
+    className="bg-black border px-3 py-2"
+  >
+    <option value="all">All Data</option>
+    <option value="year">Yearly</option>
+    <option value="month">Monthly</option>
+  </select>
+
+  {/* YEAR */}
+  <select
+    value={year || ""}
+    onChange={(e) => setYear(e.target.value ? Number(e.target.value) : null)}
+    disabled={mode === "all"}   // 🔥 important
+    className="bg-black border px-3 py-2"
+  >
+    <option value="">Select Year</option>
+    {years.map(y => <option key={y} value={y}>{y}</option>)}
+  </select>
+
+  {/* MONTH */}
+  <select
+    value={month || ""}
+    onChange={(e) => setMonth(e.target.value ? Number(e.target.value) : null)}
+    disabled={mode !== "month"}   // 🔥 main logic
+    className="bg-black border px-3 py-2"
+  >
+    <option value="">Select Month</option>
+    {[
+      "Jan","Feb","Mar","Apr","May","Jun",
+      "Jul","Aug","Sep","Oct","Nov","Dec"
+    ].map((m, i) => (
+      <option key={i} value={i+1}>{m}</option>
+    ))}
+  </select>
+
+</div>
+
+      {monthlyData.length === 0 && (
+  <div className="text-center text-gray-400 mt-10">
+    No data available for selected month 😔
+  </div>
+)}
       {/* KPI TABLE */}
     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
 

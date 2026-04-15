@@ -224,9 +224,12 @@ def get_data(year: int = Query(None),
 
         years = sorted(df['Year'].dropna().unique().tolist())
 
-        if year is None:
-            year = df['Year'].max()
+        if year:
             df = df[df['Year'] == year]
+        
+        # if year is None:
+        #     year = df['Year'].max()
+        #     df = df[df['Year'] == year]
 
         
         df = df[df['Year'] == year]
@@ -234,7 +237,25 @@ def get_data(year: int = Query(None),
         if month:
             df = df[df['MonthNum'] == month]
 
-       
+        if df.empty:
+            return {
+                "success": True,
+                "years": years,
+                "monthly": [],
+                "kpi": {
+                    "total_revenue": 0,
+                    "total_profit": 0,
+                    "avg_margin": 0,
+                    "avg_deal": 0,
+                    "avg_days": 0,
+                    "cash_total": 0,
+                    "bank_total": 0,
+                },
+                "growth": {
+                    "revenue_change": 0,
+                    "profit_change": 0
+                }
+            }
 
         # 🚛 Route
         df['Route'] = df['Trip From'].astype(str).str.strip() + ' → ' + df['Trip TO'].astype(str).str.strip()
@@ -445,7 +466,16 @@ def get_data(year: int = Query(None),
         discrepancy_total = float(discrepancies['Difference'].sum())
 
         # 🔥 Best values
-        best_month_row = monthly.loc[monthly['Revenue'].idxmax()]
+        # best_month_row = monthly.loc[monthly['Revenue'].idxmax()]
+
+        if not monthly.empty:
+            best_month_row = monthly.loc[monthly['Revenue'].idxmax()]
+            best_month = best_month_row['Month']
+            best_month_revenue = float(best_month_row['Revenue'])
+        else:
+            best_month = "N/A"
+            best_month_revenue = 0
+
         best_month = best_month_row['Month']
         best_month_revenue = float(best_month_row['Revenue'])
 
