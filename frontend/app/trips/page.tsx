@@ -34,8 +34,15 @@ export default function TripsPage() {
       },
     })
       .then((res) => res.json())
-      .then((data) => setColumns(data.columns || []));
-  }, [token]);
+      .then((data) => {
+        if (Array.isArray(data)) {
+              setColumns(data);
+            } else {
+              setColumns(data.columns || []);
+            }
+          })
+          .catch(() => setColumns([]));
+        }, [token]);
 
   // 🔥 FETCH TRIPS
   const fetchTrips = async () => {
@@ -47,11 +54,22 @@ export default function TripsPage() {
     if (endDate)
       url += startDate ? `&end=${endDate}` : `?end=${endDate}`;
 
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    // const res = await fetch(url, {
+    //   headers: { Authorization: `Bearer ${token}` },
+    // });
 
-    if (!res.ok) return;
+    // if (!res.ok) return;
+
+    const res = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!res.ok) {
+        console.error("API ERROR");
+        return;
+      }
 
     const data = await res.json();
     setTrips(data || []);
@@ -171,7 +189,7 @@ export default function TripsPage() {
       {/* FORM */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
 
-        {columns.map((col) => {
+        {Array.isArray(columns) && columns.map((col) => {
 
           if (
             col === "trip_id" ||
