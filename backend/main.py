@@ -183,6 +183,17 @@ def add_trip(data: dict, user=Depends(verify_token)):
 
     return {"msg": "Trip added", "trip_id": trip_id}
 
+
+@app.get("/columns")
+def get_columns(user=Depends(verify_token)):
+    client = get_client()
+    sheet = client.open_by_url("YOUR_SHEET_URL").sheet1
+
+    headers = sheet.row_values(1)
+
+    return {"columns": headers}
+
+
 @app.get("/trips")
 def get_trips(
     start: str = Query(None),
