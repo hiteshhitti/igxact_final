@@ -15,6 +15,7 @@ from pydantic import BaseModel
 import json
 import os
 from dotenv import load_dotenv
+import traceback
 
 load_dotenv()
 
@@ -401,6 +402,10 @@ def get_data(year: int = Query(None),
         cash_total = df['Total Cash'].sum()
         bank_total = df['Total Bank'].sum()
 
+        for col in ["Fuel", "Tolls & Taxes", "Parking", "Driver Allowance", "Sales Commission"]:
+            if col not in df.columns:
+                df[col] = 0
+        
         df["TotalExpense"] = (
             df["Fuel"] +
             df["Tolls & Taxes"] +
@@ -585,9 +590,14 @@ def get_data(year: int = Query(None),
             best_month_revenue = 0
 
 
-        best_vehicle = veh.index[0]
-        best_vehicle_revenue = float(veh.iloc[0]['TotalRevenue'])
-        best_vehicle_margin = float(veh.iloc[0]['AvgMargin'])
+        if len(veh) > 0:
+            best_vehicle = veh.index[0]
+            best_vehicle_revenue = float(veh.iloc[0]['TotalRevenue'])
+            best_vehicle_margin = float(veh.iloc[0]['AvgMargin'])
+        else:
+            best_vehicle = "N/A"
+            best_vehicle_revenue = 0
+            best_vehicle_margin = 0
 
         # best_cust = cust.index[0]
         # best_cust_revenue = float(cust.iloc[0])
@@ -599,9 +609,9 @@ def get_data(year: int = Query(None),
             best_cust = "N/A"
             best_cust_revenue = 0
 
-        best_route = routes.index[0]
+        best_route = routes.index[0] if len(routes) > 0 else "N/A"
 
-        sat_trips = int(dow_counts['Saturday'])
+        sat_trips = int(dow_counts.get('Saturday', 0))
 
         fuel_pct = (df["Fuel"].sum() / cost_totals.sum() * 100) if cost_totals.sum() > 0 else 0
         digital_pct = (bank_total / (cash_total + bank_total) * 100) if (cash_total + bank_total) > 0 else 0
@@ -697,5 +707,5 @@ def get_data(year: int = Query(None),
         }
 
     except Exception as e:
-        print("ERROR:", e)
-        raise HTTPException(status_code=500, detail="Internal Server Error")
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
