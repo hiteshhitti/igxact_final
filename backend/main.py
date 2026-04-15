@@ -159,6 +159,76 @@ def change_password(data: dict, user=Depends(verify_token)):
     finally:
         db.close()
 
+@app.post("/add-trip")
+def add_trip(data: dict, user=Depends(verify_token)):
+    client = get_client()
+    sheet = client.open_by_url("YOUR_SHEET_URL").sheet1
+
+    # generate trip_id
+    existing = sheet.get_all_records()
+    trip_id = len(existing) + 1
+
+    row = [
+        trip_id,
+        data.get("Customer Name"),
+        data.get("Trip From"),
+        data.get("Trip TO"),
+        data.get("Start Date"),
+        data.get("Deal Price"),
+        data.get("Fuel"),
+        data.get("Driver Allowance"),
+    ]
+
+    sheet.append_row(row)
+
+    return {"msg": "Trip added", "trip_id": trip_id}
+
+@app.get("/trips")
+def get_trips(
+    start: str = Query(None),
+    end: str = Query(None),
+    user=Depends(verify_token)
+):
+    client = get_client()
+    sheet = client.open_by_url("YOUR_SHEET_URL").sheet1
+
+    data = sheet.get_all_records()
+    df = pd.DataFrame(data)
+
+    df['Start Date'] = pd.to_datetime(df['Start Date'], errors='coerce')
+
+    if start:
+        df = df[df['Start Date'] >= pd.to_datetime(start)]
+    if end:
+        df = df[df['Start Date'] <= pd.to_datetime(end)]
+
+    return df.to_dict(orient="records")
+
+@app.put("/update-trip/{trip_id}")
+def update_trip(trip_id: int, data: dict, user=Depends(verify_token)):
+    client = get_client()
+    sheet = client.open_by_url("YOUR_SHEET_URL").sheet1
+
+    records = sheet.get_all_records()
+
+    for i, row in enumerate(records):
+        if int(row["trip_id"]) == trip_id:
+            row_index = i + 2  # header skip
+
+            sheet.update(f"B{row_index}", data.get("Customer Name"))
+            sheet.update(f"C{row_index}", data.get("Trip From"))
+            sheet.update(f"D{row_index}", data.get("Trip TO"))
+            sheet.update(f"E{row_index}", data.get("Start Date"))
+            sheet.update(f"F{row_index}", data.get("Deal Price"))
+
+            return {"msg": "Updated successfully"}
+
+    raise HTTPException(status_code=404, detail="Trip not found")
+
+
+
+
+
 @app.get("/data")
 def get_data(year: int = Query(None), 
              user=Depends(verify_token),
