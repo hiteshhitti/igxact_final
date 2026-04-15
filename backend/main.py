@@ -232,7 +232,7 @@ def get_data(year: int = Query(None),
         #     df = df[df['Year'] == year]
 
         
-        df = df[df['Year'] == year]
+        # df = df[df['Year'] == year]
         
         if month:
             df = df[df['MonthNum'] == month]
