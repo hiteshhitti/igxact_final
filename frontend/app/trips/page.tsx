@@ -83,6 +83,18 @@ export default function TripsPage() {
   // =========================
   const num = (val: any) => Number(val) || 0;
 
+  const formatToSheetDate = (dateStr: string) => {
+      if (!dateStr) return "";
+
+      const d = new Date(dateStr);
+
+      const month = d.getMonth() + 1;
+      const day = d.getDate();
+      const year = d.getFullYear();
+
+      return `${month}/${day}/${year}`; // 👉 MM/DD/YYYY
+    };
+
   // =========================
   // 🔥 AUTO CALCULATIONS
   // =========================
@@ -128,6 +140,8 @@ export default function TripsPage() {
 
     const payload = {
       ...form,
+      "Start Date": formatToSheetDate(form["Start Date"]),
+      "End date": formatToSheetDate(form["End date"]),
       trip_id: editingId || generateId(), // ✅ AUTO ID
       "Net Profit (without Driver Salary)": netProfit,
       "Profit without commission": profitWithoutCommission,
