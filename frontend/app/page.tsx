@@ -167,9 +167,7 @@ const monthTargets = data?.month_targets || [];
   </select>
 </div>
 
-      <button onClick={logout} className="bg-red-600 px-4 py-2 rounded">
-        Logout
-      </button>
+
 
       <button onClick={() => push("/insights")}>
         View Insights →
