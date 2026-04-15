@@ -389,6 +389,8 @@ def get_data(year: int = Query(None),
         df['Tolls & Taxes'] = clean_numeric('Tolls & Taxes')
         df['Parking'] = clean_numeric('Parking')
         df['Driver Allowance'] = clean_numeric('Driver Allowance')
+        df['Fuel'] = clean_numeric('Fuel')
+        df['Sales Commission'] = clean_numeric('Sales Commission')
 
         df = df.fillna(0)
 
