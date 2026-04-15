@@ -12,6 +12,11 @@ export default function TripsPage() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
+  // =========================
+  // 🔥 AUTO ID GENERATOR
+  // =========================
+  const generateId = () => `TRIP-${Date.now()}`;
+
   // 🔐 TOKEN
   useEffect(() => {
     const t = sessionStorage.getItem("token");
@@ -36,13 +41,13 @@ export default function TripsPage() {
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
-              setColumns(data);
-            } else {
-              setColumns(data.columns || []);
-            }
-          })
-          .catch(() => setColumns([]));
-        }, [token]);
+          setColumns(data);
+        } else {
+          setColumns(data.columns || []);
+        }
+      })
+      .catch(() => setColumns([]));
+  }, [token]);
 
   // 🔥 FETCH TRIPS
   const fetchTrips = async () => {
@@ -54,22 +59,16 @@ export default function TripsPage() {
     if (endDate)
       url += startDate ? `&end=${endDate}` : `?end=${endDate}`;
 
-    // const res = await fetch(url, {
-    //   headers: { Authorization: `Bearer ${token}` },
-    // });
-
-    // if (!res.ok) return;
-
     const res = await fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-      if (!res.ok) {
-        console.error("API ERROR");
-        return;
-      }
+    if (!res.ok) {
+      console.error("API ERROR");
+      return;
+    }
 
     const data = await res.json();
     setTrips(data || []);
@@ -80,15 +79,19 @@ export default function TripsPage() {
   }, [token, startDate, endDate]);
 
   // =========================
+  // 🔥 SAFE NUMBER PARSE
+  // =========================
+  const num = (val: any) => Number(val) || 0;
+
+  // =========================
   // 🔥 AUTO CALCULATIONS
   // =========================
-
-  const deal = Number(form["Deal Price"] || 0);
-  const fuel = Number(form["Fuel"] || 0);
-  const tolls = Number(form["Tolls & Taxes"] || 0);
-  const parking = Number(form["Parking"] || 0);
-  const driver = Number(form["Driver Allowance"] || 0);
-  const commission = Number(form["Sales Commissio"] || 0);
+  const deal = num(form["Deal Price"]);
+  const fuel = num(form["Fuel"]);
+  const tolls = num(form["Tolls & Taxes"]);
+  const parking = num(form["Parking"]);
+  const driver = num(form["Driver Allowance"]);
+  const commission = num(form["Sales Commissio"]);
 
   const netProfit = Math.round(
     deal - (fuel + tolls + parking + driver + commission)
@@ -99,7 +102,9 @@ export default function TripsPage() {
   const profitPercent =
     deal > 0 ? ((netProfit / deal) * 100).toFixed(2) : 0;
 
+  // =========================
   // 🔥 AUTO DAYS
+  // =========================
   useEffect(() => {
     if (form["Start Date"] && form["End date"]) {
       const start = new Date(form["Start Date"]);
@@ -118,12 +123,12 @@ export default function TripsPage() {
   // =========================
   // 🔥 SUBMIT
   // =========================
-
   const handleSubmit = async () => {
     if (!token) return;
 
     const payload = {
       ...form,
+      trip_id: editingId || generateId(), // ✅ AUTO ID
       "Net Profit (without Driver Salary)": netProfit,
       "Profit without commission": profitWithoutCommission,
       "Profit Percentage": Number(profitPercent),
@@ -188,7 +193,6 @@ export default function TripsPage() {
 
       {/* FORM */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-
         {Array.isArray(columns) && columns.map((col) => {
 
           if (
@@ -201,6 +205,18 @@ export default function TripsPage() {
           return (
             <input
               key={col}
+              type={
+                col.toLowerCase().includes("date")
+                  ? "date"
+                  : col.toLowerCase().includes("price") ||
+                    col.toLowerCase().includes("fuel") ||
+                    col.toLowerCase().includes("toll") ||
+                    col.toLowerCase().includes("parking") ||
+                    col.toLowerCase().includes("allowance") ||
+                    col.toLowerCase().includes("commiss")
+                  ? "number"
+                  : "text"
+              }
               placeholder={col}
               value={form[col] || ""}
               onChange={(e) =>
@@ -210,7 +226,6 @@ export default function TripsPage() {
             />
           );
         })}
-
       </div>
 
       <button onClick={handleSubmit} className="bg-blue-600 px-6 py-2 rounded mb-10">
