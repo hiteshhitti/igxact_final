@@ -374,11 +374,12 @@ def get_data(year: int = Query(None),
             return pd.to_numeric(
                 df[col]
                 .astype(str)
+                .replace("", "0")
                 .str.replace(',', '')
                 .str.replace('₹', '')
                 .str.replace('%', ''),
                 errors='coerce'
-            )
+            ).fillna(0)
 
         df['Deal Price'] = clean_numeric('Deal Price')
         df['Net Profit (without Driver Salary)'] = clean_numeric('Net Profit (without Driver Salary)')
