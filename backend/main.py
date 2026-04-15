@@ -162,7 +162,7 @@ def change_password(data: dict, user=Depends(verify_token)):
 @app.post("/add-trip")
 def add_trip(data: dict, user=Depends(verify_token)):
     client = get_client()
-    sheet = client.open_by_url("YOUR_SHEET_URL").sheet1
+    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0").sheet1
 
     # generate trip_id
     existing = sheet.get_all_records()
@@ -190,7 +190,7 @@ def get_trips(
     user=Depends(verify_token)
 ):
     client = get_client()
-    sheet = client.open_by_url("YOUR_SHEET_URL").sheet1
+    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0").sheet1
 
     data = sheet.get_all_records()
     df = pd.DataFrame(data)
@@ -207,7 +207,7 @@ def get_trips(
 @app.put("/update-trip/{trip_id}")
 def update_trip(trip_id: int, data: dict, user=Depends(verify_token)):
     client = get_client()
-    sheet = client.open_by_url("YOUR_SHEET_URL").sheet1
+    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0").sheet1
 
     records = sheet.get_all_records()
 

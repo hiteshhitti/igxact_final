@@ -24,6 +24,9 @@ export default function Navbar() {
         <button onClick={() => push("/monthly")}>
           Monthly
         </button>
+        <button onClick={() => push("/trips")}>
+          Trips
+        </button>
 
       </div>
     </div>
