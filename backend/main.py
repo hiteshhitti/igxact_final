@@ -284,6 +284,8 @@ def get_data(year: int = Query(None),
         sheet=client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0").sheet1
         data=sheet.get_all_records()
         df = pd.DataFrame(data)
+        df = df.replace('', np.nan)   # turn all empty strings into NaN
+        df = df.fillna(0) 
 
         df.columns = (
             df.columns
@@ -300,6 +302,14 @@ def get_data(year: int = Query(None),
         # 🧹 Clean columns
         df.columns = df.columns.str.strip()
         # df=df.dropna(subset="Customer Name")
+
+        numeric_cols = ['Deal Price', 'Net Profit (without Driver Salary)', 'Profit Percentage',
+                'Number of Days', 'Total Cash', 'Total Bank', 'Fuel', 
+                'Tolls & Taxes', 'Parking', 'Driver Allowance', 'Sales Commission']
+
+        for col in numeric_cols:
+            if col in df.columns:
+                df[col] = df[col].replace('', '0')
 
 
         # 🧹 Replace null & inf
@@ -371,15 +381,14 @@ def get_data(year: int = Query(None),
 
         # 🔥 CLEAN NUMERIC COLUMNS
         def clean_numeric(col):
-            return pd.to_numeric(
-                df[col]
-                .astype(str)
-                .replace("", "0")
-                .str.replace(',', '')
-                .str.replace('₹', '')
-                .str.replace('%', ''),
-                errors='coerce'
-            ).fillna(0)
+            series = df[col].astype(str).str.strip()
+            series = series.replace('', '0')          # pandas Series .replace(), not str method
+            series = series.str.replace(',', '', regex=False)
+            series = series.str.replace('₹', '', regex=False)
+            series = series.str.replace('%', '', regex=False)
+            series = series.replace('nan', '0')       # handle 'nan' strings
+            series = series.replace('None', '0')      # handle 'None' strings
+            return pd.to_numeric(series, errors='coerce').fillna(0)
 
         df['Deal Price'] = clean_numeric('Deal Price')
         df['Net Profit (without Driver Salary)'] = clean_numeric('Net Profit (without Driver Salary)')
