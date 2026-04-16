@@ -371,7 +371,7 @@ def get_data(year: int = Query(None),
 
         df['Status'] = df['Status'].astype(str).str.strip().str.lower()
         df_completed = df[df['Status'] == 'completed']
-        df_progress = df[df['Status'] == 'in progress']
+        df_progress = df[df['Status'] == 'progress']
         df_booked = df[df['Status'] == 'booked']
 
         df = df_completed
