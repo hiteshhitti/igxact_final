@@ -100,11 +100,11 @@ const monthTargets = data?.month_targets || [];
 const progressTrips = data?.pipeline?.progress || [];
 const bookedTrips = data?.pipeline?.booked || [];
 
-const progressTotal = progressTrips.reduce((a,b)=>a + b["Deal Price"],0)
-const progressReceived = progressTrips.reduce((a,b)=>a + b["Received"],0)
+const progressTotal = progressTrips.reduce((a: number, b: any) => a + (b["Deal Price"] || 0), 0)
+const progressReceived = progressTrips.reduce((a: number, b: any) => a + (b["Received"] || 0), 0)
 
-const bookedTotal = bookedTrips.reduce((a,b)=>a + b["Deal Price"],0)
-const bookedReceived = bookedTrips.reduce((a,b)=>a + b["Received"],0)
+const bookedTotal = bookedTrips.reduce((a: number, b: any) => a + (b["Deal Price"] || 0), 0)
+const bookedReceived = bookedTrips.reduce((a: number, b: any) => a + (b["Received"] || 0), 0)
 
 
   return (
