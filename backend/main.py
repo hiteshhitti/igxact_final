@@ -264,7 +264,35 @@ def update_trip(trip_id: int, data: dict, user=Depends(verify_token)):
 
     raise HTTPException(status_code=404, detail="Trip not found")
 
+def build_pipeline(df_src):
+    if df_src.empty:
+        return []
 
+    def clean(col):
+        if col not in df_src.columns:
+            return 0
+        series = df_src[col].astype(str).str.replace(',', '')
+        return pd.to_numeric(series, errors='coerce').fillna(0)
+
+    df_src['Deal Price'] = clean('Deal Price')
+
+    df_src['AdvanceCash'] = clean('Booking Amt/Advance Cash')
+    df_src['AdvanceBank'] = clean('Booking Amt/Advance Bank')
+
+    df_src['Received'] = df_src['AdvanceCash'] + df_src['AdvanceBank']
+    df_src['Pending'] = df_src['Deal Price'] - df_src['Received']
+
+    return df_src[[
+        'Customer Name',
+        'Trip From',
+        'Trip TO',
+        'Start Date',
+        'End date',
+        'Vehicle Details',
+        'Deal Price',
+        'Received',
+        'Pending'
+    ]].fillna("").to_dict(orient="records")
 
 
 
@@ -341,6 +369,16 @@ def get_data(year: int = Query(None),
         df['DayOfWeek'] = df['Start Date'].dt.day_name()
         df['Year'] = df['Start Date'].dt.year
 
+        df['Status'] = df['Status'].astype(str).str.strip().str.lower()
+        df_completed = df[df['Status'] == 'completed']
+        df_progress = df[df['Status'] == 'in progress']
+        df_booked = df[df['Status'] == 'booked']
+
+        df = df_completed
+
+        progress_data = build_pipeline(df_progress.copy())
+        booked_data = build_pipeline(df_booked.copy())
+
         years = sorted(df['Year'].dropna().unique().tolist())
 
         if year:
@@ -405,6 +443,7 @@ def get_data(year: int = Query(None),
         df = df.fillna(0)
 
         # 📊 KPI calculations
+        
         total_revenue = df['Deal Price'].sum()
         total_profit = df['Net Profit (without Driver Salary)'].sum()
         avg_margin = df['Profit Percentage'].mean()
@@ -702,6 +741,16 @@ def get_data(year: int = Query(None),
                 "avg_days": round(float(avg_days), 2),
                 "cash_total": round(float(cash_total), 2),
                 "bank_total": round(float(bank_total), 2),
+            },
+
+            "pipeline_summary": {
+                "progress_total": sum([x["Deal Price"] for x in progress_data]),
+                "booked_total": sum([x["Deal Price"] for x in booked_data])
+                },
+
+            "pipeline": {
+                "progress": progress_data,
+                "booked": booked_data
             },
             "monthly": monthly_data,
             "vehicle": veh_data,

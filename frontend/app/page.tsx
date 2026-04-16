@@ -97,6 +97,14 @@ if (!token || token === "undefined" || token === "null") {
 
 const formatTrips = (v: any) => `${v ?? 0} trips`;
 const monthTargets = data?.month_targets || [];
+const progressTrips = data?.pipeline?.progress || [];
+const bookedTrips = data?.pipeline?.booked || [];
+
+const progressTotal = progressTrips.reduce((a,b)=>a + b["Deal Price"],0)
+const progressReceived = progressTrips.reduce((a,b)=>a + b["Received"],0)
+
+const bookedTotal = bookedTrips.reduce((a,b)=>a + b["Deal Price"],0)
+const bookedReceived = bookedTrips.reduce((a,b)=>a + b["Received"],0)
 
 
   return (
@@ -215,6 +223,43 @@ const monthTargets = data?.month_targets || [];
         </div>
 
       </div>
+
+      <h2>In Progress Trips</h2>
+
+<p>Total Deal: ₹{progressTotal}</p>
+<p>Received: ₹{progressReceived}</p>
+
+{progressTrips.map((trip:any, i:number) => (
+  <div key={i} className="card">
+    <h3>{trip["Trip From"]} → {trip["Trip TO"]}</h3>
+    
+    <p>{trip["Start Date"]} - {trip["End date"]}</p>
+    <p>Vehicle: {trip["Vehicle Details"]}</p>
+
+    <p>Deal: ₹{trip["Deal Price"]}</p>
+    <p>Received: ₹{trip["Received"]}</p>
+    <p>Pending: ₹{trip["Pending"]}</p>
+  </div>
+))}
+
+
+<h2>Booked Trips</h2>
+
+<p>Total Deal: ₹{bookedTotal}</p>
+<p>Received: ₹{bookedReceived}</p>
+
+{bookedTrips.map((trip:any, i:number) => (
+  <div key={i} className="card">
+    <h3>{trip["Trip From"]} → {trip["Trip TO"]}</h3>
+    
+    <p>{trip["Start Date"]} - {trip["End date"]}</p>
+    <p>Vehicle: {trip["Vehicle Details"]}</p>
+
+    <p>Deal: ₹{trip["Deal Price"]}</p>
+    <p>Received: ₹{trip["Received"]}</p>
+    <p>Pending: ₹{trip["Pending"]}</p>
+  </div>
+))}
 
       {/* Monthly */}
       <div className={`${glass} p-6`}>
