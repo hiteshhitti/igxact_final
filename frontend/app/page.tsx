@@ -382,21 +382,33 @@ export default function Home() {
           </ResponsiveContainer>
         </div>
         <div className={`${glass} p-6`}>
-          <h2 className="mb-4">Monthly Cost Breakdown 📊</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data.monthly_cost}>
-              <XAxis dataKey="MonthNum" stroke="#aaa" />
-              <YAxis stroke="#aaa" />
-              <Tooltip contentStyle={tooltipStyle} />
-              <Legend />
-              <Bar dataKey="Fuel" stackId="a" fill="#D85A30" />
-              <Bar dataKey="Tolls & Taxes" stackId="a" fill="#BA7517" />
-              <Bar dataKey="Parking" stackId="a" fill="#888780" />
-              <Bar dataKey="Driver Allowance" stackId="a" fill="#1D9E75" />
-              <Bar dataKey="Sales Commission" stackId="a" fill="#7F77DD" />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
+  <h2 className="mb-4">Revenue Breakdown 📊</h2>
+
+  <ResponsiveContainer width="100%" height={300}>
+    <PieChart>
+      <Pie
+        data={data.revenue_breakdown || []}
+        dataKey="value"
+        nameKey="name"
+        outerRadius={100}
+        label={(e: any) => `${(e.percent * 100).toFixed(0)}%`}
+      >
+        {(data.revenue_breakdown || []).map((_: any, i: number) => (
+          <Cell key={i} fill={COST_COLORS[i % COST_COLORS.length]} />
+        ))}
+      </Pie>
+
+      <Tooltip
+        contentStyle={tooltipStyle}
+        formatter={(v: any) =>
+          `₹${(v ?? 0).toLocaleString("en-IN")}`
+        }
+      />
+
+      <Legend />
+    </PieChart>
+  </ResponsiveContainer>
+</div>
       </div>
 
       {/* DURATION + DAY */}
@@ -451,22 +463,38 @@ export default function Home() {
           </ResponsiveContainer>
         </div>
         <div className={`${glass} p-6`}>
-          <h2 className="mb-4">Monthly Cash vs Bank 📊</h2>
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={data.monthly_payment || []}>
-              <XAxis dataKey="MonthNum" stroke="#aaa"
-                tickFormatter={(v: any) =>
-                  ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][v - 1]
-                } />
-              <YAxis stroke="#aaa" />
-              <Tooltip contentStyle={tooltipStyle}
-                formatter={(v: any) => `₹${(v ?? 0).toLocaleString("en-IN")}`} />
-              <Legend />
-              <Bar dataKey="Cash" stackId="a" fill="#EF9F27" />
-              <Bar dataKey="Bank" stackId="a" fill="#378ADD" />
-            </BarChart>
-          </ResponsiveContainer>
+  <h2 className="mb-4">Payment Summary 💰</h2>
+
+  <div className="space-y-4">
+    {(data.payment_split || []).map((p: any, i: number) => {
+
+      const percent = (p.value / (kpi.total_revenue || 1)) * 100;
+
+      return (
+        <div key={i} className="bg-white/5 p-4 rounded-xl border border-white/10">
+
+          <div className="flex justify-between text-sm">
+            <span>{p.name}</span>
+            <span>₹ {p.value.toLocaleString("en-IN")}</span>
+          </div>
+
+          {/* progress bar */}
+          <div className="h-2 bg-white/10 rounded mt-2">
+            <div
+              className="h-2 rounded bg-blue-400"
+              style={{ width: `${percent}%` }}
+            />
+          </div>
+
+          <p className="text-xs text-gray-400 mt-1">
+            {percent.toFixed(1)}%
+          </p>
+
         </div>
+      );
+    })}
+  </div>
+</div>
       </div>
 
       {/* INSIGHTS */}

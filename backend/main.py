@@ -370,11 +370,13 @@ def get_data(year: int = Query(None),
         df['Year'] = df['Start Date'].dt.year
 
         df['Status'] = df['Status'].astype(str).str.strip().str.lower()
-        df_completed = df[df['Status'] == 'completed']
-        df_progress = df[df['Status'] == 'progress']
-        df_booked = df[df['Status'] == 'booked']
 
-        df = df_completed
+
+        
+
+        df_progress = df[df['Status'].str.contains('progress', na=False)]
+        df_booked = df[df['Status'].str.contains('booked', na=False)]
+        df_completed = df[df['Status'].str.contains('completed', na=False)]
 
         progress_data = build_pipeline(df_progress.copy())
         booked_data = build_pipeline(df_booked.copy())
@@ -564,6 +566,27 @@ def get_data(year: int = Query(None),
         cost_totals = df[cost_cols].sum()
 
         cost_data = []
+
+
+        # 🔥 REVENUE BREAKDOWN (expenses + profit)
+
+        total_profit_val = df['Net Profit (without Driver Salary)'].sum()
+
+        revenue_breakdown = []
+
+        # expenses
+        for col, val in cost_totals.items():
+            revenue_breakdown.append({
+                "name": col,
+                "value": float(val)
+            })
+
+        # profit add
+        revenue_breakdown.append({
+            "name": "Profit",
+            "value": float(total_profit_val)
+        })
+
         total_cost = cost_totals.sum()
 
         for col, val in cost_totals.items():
@@ -730,6 +753,7 @@ def get_data(year: int = Query(None),
 
         # ✅ Response
         return {
+            "revenue_breakdown": revenue_breakdown,
             "success": True,
             "years": years,
             "month_targets": month_targets,
@@ -744,9 +768,12 @@ def get_data(year: int = Query(None),
             },
 
             "pipeline_summary": {
-                "progress_total": sum([x["Deal Price"] for x in progress_data]),
-                "booked_total": sum([x["Deal Price"] for x in booked_data])
-                },
+                "progress_total": float(sum([x["Deal Price"] for x in progress_data])),
+                "progress_received": float(sum([x["Received"] for x in progress_data])),
+
+                "booked_total": float(sum([x["Deal Price"] for x in booked_data])),
+                "booked_received": float(sum([x["Received"] for x in booked_data]))
+            },
 
             "pipeline": {
                 "progress": progress_data,
