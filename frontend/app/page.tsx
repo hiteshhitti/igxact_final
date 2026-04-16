@@ -108,31 +108,31 @@ const bookedReceived = bookedTrips.reduce((a: number, b: any) => a + (b["Receive
 
 // 🔥 YAHAN (return se upar)
 
-const TripCard = ({ trip }: any) => {
-  const pending = trip["Pending"];
+  const TripCard = ({ trip }: any) => {
+    const pending = trip["Pending"];
 
-  return (
-    <div style={{
-      background: "#111",
-      borderRadius: "16px",
-      padding: "16px",
-      color: "#fff",
-      border: "1px solid #222"
-    }}>
-      <h3>{trip["Trip From"]} → {trip["Trip TO"]}</h3>
+    return (
+      <div style={{
+        background: "#111",
+        borderRadius: "16px",
+        padding: "16px",
+        color: "#fff",
+        border: "1px solid #222"
+      }}>
+        <h3>{trip["Trip From"]} → {trip["Trip TO"]}</h3>
 
-      <p style={{opacity: 0.6}}>
-        {trip["Start Date"]} - {trip["End date"]}
-      </p>
+        <p style={{opacity: 0.6}}>
+          {trip["Start Date"]} - {trip["End date"]}
+        </p>
 
-      <p>🚗 {trip["Vehicle Details"]}</p>
+        <p>🚗 {trip["Vehicle Details"]}</p>
 
-      <p>💰 ₹{trip["Deal Price"]}</p>
-      <p style={{color: "#4ade80"}}>Received: ₹{trip["Received"]}</p>
-      <p style={{color: "#f87171"}}>Pending: ₹{pending}</p>
-    </div>
-  );
-};
+        <p>💰 ₹{trip["Deal Price"]}</p>
+        <p style={{color: "#4ade80"}}>Received: ₹{trip["Received"]}</p>
+        <p style={{color: "#f87171"}}>Pending: ₹{pending}</p>
+      </div>
+    );
+  };
 
 
   return (
