@@ -106,6 +106,9 @@ const progressReceived = progressTrips.reduce((a: number, b: any) => a + (b["Rec
 const bookedTotal = bookedTrips.reduce((a: number, b: any) => a + (b["Deal Price"] || 0), 0)
 const bookedReceived = bookedTrips.reduce((a: number, b: any) => a + (b["Received"] || 0), 0)
 
+const TripCard = ({ trip }: any) => {
+  const pending = trip["Pending"];
+
 
   return (
     
@@ -224,42 +227,62 @@ const bookedReceived = bookedTrips.reduce((a: number, b: any) => a + (b["Receive
 
       </div>
 
-      <h2>In Progress Trips</h2>
+      <h2 style={{marginTop: "30px"}}>In Progress Trips</h2>
 
-<p>Total Deal: ₹{progressTotal}</p>
-<p>Received: ₹{progressReceived}</p>
+    <div style={{
+      background: "#0f172a",
+      padding: "12px",
+      borderRadius: "12px",
+      marginBottom: "15px"
+    }}>
+      <p>💰 Total Deal: ₹{progressTotal}</p>
+      <p>💸 Received: ₹{progressReceived}</p>
+    </div>
 
-{progressTrips.map((trip:any, i:number) => (
-  <div key={i} className="card">
-    <h3>{trip["Trip From"]} → {trip["Trip TO"]}</h3>
-    
-    <p>{trip["Start Date"]} - {trip["End date"]}</p>
-    <p>Vehicle: {trip["Vehicle Details"]}</p>
+    <div style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+      gap: "16px",
+      maxHeight: "400px",
+      overflowY: "auto"
+    }}>
+      {progressTrips.length === 0 ? (
+        <p>No active trips</p>
+      ) : (
+        progressTrips.map((trip:any, i:number) => (
+          <TripCard key={i} trip={trip} />
+        ))
+      )}
+    </div>
 
-    <p>Deal: ₹{trip["Deal Price"]}</p>
-    <p>Received: ₹{trip["Received"]}</p>
-    <p>Pending: ₹{trip["Pending"]}</p>
+
+    {/* 🟡 BOOKED */}
+    <h2 style={{marginTop: "40px"}}>Booked Trips</h2>
+
+    <div style={{
+      background: "#1e293b",
+      padding: "12px",
+      borderRadius: "12px",
+      marginBottom: "15px"
+    }}>
+      <p>💰 Total Deal: ₹{bookedTotal}</p>
+      <p>💸 Received: ₹{bookedReceived}</p>
+    </div>
+
+    <div style={{
+      display: "grid",
+      gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))",
+      gap: "16px",
+      maxHeight: "400px",
+      overflowY: "auto"
+    }}>
+      {bookedTrips.map((trip:any, i:number) => (
+        <TripCard key={i} trip={trip} />
+      ))}
+    </div>
+
   </div>
-))}
-
-
-<h2>Booked Trips</h2>
-
-<p>Total Deal: ₹{bookedTotal}</p>
-<p>Received: ₹{bookedReceived}</p>
-
-{bookedTrips.map((trip:any, i:number) => (
-  <div key={i} className="card">
-    <h3>{trip["Trip From"]} → {trip["Trip TO"]}</h3>
-    
-    <p>{trip["Start Date"]} - {trip["End date"]}</p>
-    <p>Vehicle: {trip["Vehicle Details"]}</p>
-
-    <p>Deal: ₹{trip["Deal Price"]}</p>
-    <p>Received: ₹{trip["Received"]}</p>
-    <p>Pending: ₹{trip["Pending"]}</p>
-  </div>
-))}
+);
 
       {/* Monthly */}
       <div className={`${glass} p-6`}>
