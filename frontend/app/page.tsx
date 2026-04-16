@@ -133,30 +133,65 @@ export default function Home() {
 
       {/* Month Targets */}
       <div className="flex justify-end gap-4 flex-wrap">
-        {(monthTargets || []).map((m: any, i: number) => (
-          <div
-            key={i}
-            className={`p-4 rounded-xl w-[180px] transition-all duration-300 
-            ${m.status === "green"
-                ? "bg-green-500/20 border border-green-400"
-                : "bg-red-500/20 border border-red-400"}`}
-          >
-            <p className="text-sm text-gray-300">{m.month}</p>
-            <h2 className="text-lg font-bold">
-              ₹ {m.revenue.toLocaleString("en-IN")}
-            </h2>
-            <p className="text-xs text-gray-400">{m.trips} trips</p>
-            <p className="text-xs mt-1">Target: ₹ {m.target.toLocaleString("en-IN")}</p>
-            <div className="h-2 bg-white/10 rounded mt-2">
-              <div
-                className={`h-2 rounded ${m.status === "green" ? "bg-green-400" : "bg-red-400"}`}
-                style={{ width: `${Math.min((m.revenue / m.target) * 100, 100)}%` }}
-              />
-            </div>
-          </div>
-        ))}
-      </div>
+  {(monthTargets || []).map((m: any, i: number) => {
 
+    const remaining = Math.max(m.target - m.revenue, 0);
+    const percent = m.target ? (m.revenue / m.target) * 100 : 0;
+
+    return (
+      <div
+        key={i}
+        className={`p-4 rounded-xl w-[200px] transition-all duration-300 
+        ${m.status === "green"
+          ? "bg-green-500/20 border border-green-400"
+          : "bg-red-500/20 border border-red-400"}`}
+      >
+        <p className="text-sm text-gray-300">{m.month}</p>
+
+        <h2 className="text-lg font-bold">
+          ₹ {m.revenue.toLocaleString("en-IN")}
+        </h2>
+
+        <p className="text-xs text-gray-400">
+          {m.trips} trips
+        </p>
+
+        <p className="text-xs mt-1">
+          Target: ₹ {m.target.toLocaleString("en-IN")}
+        </p>
+
+        {/* 🔥 NEW: Remaining */}
+        {remaining === 0 ? (
+          <p className="text-green-400 text-xs mt-1 font-semibold">
+            Target Achieved 🎉
+          </p>
+        ) : (
+          <p className="text-yellow-400 text-xs mt-1">
+            Remaining: ₹ {remaining.toLocaleString("en-IN")}
+          </p>
+        )}
+
+        {/* 🔥 NEW: % */}
+        <p className="text-[10px] text-gray-400 mt-1">
+          {percent.toFixed(0)}% achieved
+        </p>
+
+        {/* progress bar */}
+        <div className="h-2 bg-white/10 rounded mt-2">
+          <div
+            className={`h-2 rounded ${
+              m.status === "green" ? "bg-green-400" : "bg-red-400"
+            }`}
+            style={{
+              width: `${Math.min(percent, 100)}%`
+            }}
+          />
+        </div>
+
+      </div>
+    );
+  })}
+</div>
       {/* Year Filter */}
       <div className="mb-4 flex gap-4 items-center">
         <label className="text-sm text-gray-300">Year:</label>
