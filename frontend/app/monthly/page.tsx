@@ -132,13 +132,16 @@ export default function MonthlyPage() {
         <h2 className="mb-4">Revenue vs Profit (Daily)</h2>
 
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={formattedData}>
+          <BarChart 
+          data={formattedData}
+          margin={{top:20, right:20, left:0, bottom:80}}
+          >
             <XAxis 
             dataKey="formattedDate"
-            angle={90}
+            angle={-90}
             textAnchor="end"
             interval={0}
-            height={80}
+            height={120}
             />
             <YAxis />
             <Tooltip />
