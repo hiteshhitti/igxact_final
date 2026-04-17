@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 
 export default function TripsPage() {
   const [trips, setTrips] = useState<any[]>([]);
@@ -10,8 +12,8 @@ export default function TripsPage() {
   const [token, setToken] = useState<string | null>(null);
   const [hasFiltered, setHasFiltered] = useState(false);
 
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
+  const [startDate, setStartDate] = useState<Date | null>(null);
+  const [endDate, setEndDate] = useState<Date | null>(null);
 
   // =========================
   // 🔥 AUTO ID GENERATOR
@@ -61,9 +63,12 @@ const fetchTrips = async () => {
 
   let url = process.env.NEXT_PUBLIC_API_URL + "/trips";
 
-  if (startDate) url += `?start=${startDate}`;
+  if (startDate)
+  url += `?start=${startDate.toISOString().split("T")[0]}`;
   if (endDate)
-    url += startDate ? `&end=${endDate}` : `?end=${endDate}`;
+    url += startDate
+      ? `&end=${endDate.toISOString().split("T")[0]}`
+      : `?end=${endDate.toISOString().split("T")[0]}`;
 
   const res = await fetch(url, {
     headers: {
@@ -253,39 +258,44 @@ const fetchTrips = async () => {
       <h1 className="text-3xl font-bold mb-6">🚛 Trip Manager</h1>
 
       {/* FILTER */}
-      <div className="flex gap-4 mb-6">
-        <input
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          className="bg-black border border-gray-600 p-2 rounded"
-        />
-        <input
-          type="date"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          className="bg-black border border-gray-600 p-2 rounded"
-        />
+<div className="flex gap-4 mb-6 items-center">
 
-        <button
-          onClick={fetchTrips}
-          className="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
-        >
-          Filter
-        </button>
+  <DatePicker
+    selected={startDate}
+    onChange={(date: Date | null) => setStartDate(date)}
+    placeholderText="Start Date"
+    className="bg-black border border-gray-600 p-2 rounded text-white"
+    dateFormat="dd/MM/yyyy"
+  />
 
-        <button
-          onClick={() => {
-            setStartDate("");
-            setEndDate("");
-            setTrips([]);
-            setHasFiltered(false);
-          }}
-          className="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700"
-        >
-          Reset
-        </button>
-      </div>
+  <DatePicker
+    selected={endDate}
+    onChange={(date: Date | null) => setEndDate(date)}
+    placeholderText="End Date"
+    className="bg-black border border-gray-600 p-2 rounded text-white"
+    dateFormat="dd/MM/yyyy"
+  />
+
+  <button
+    onClick={fetchTrips}
+    className="bg-green-600 px-4 py-2 rounded hover:bg-green-700"
+  >
+    Filter
+  </button>
+
+  <button
+    onClick={() => {
+      setStartDate(null);
+      setEndDate(null);
+      setTrips([]);
+      setHasFiltered(false);
+    }}
+    className="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700"
+  >
+    Reset
+  </button>
+
+</div>
 
       {/* FORM */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
