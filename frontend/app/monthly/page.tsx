@@ -5,176 +5,184 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useEffect, useState } from "react";
 import {
-  BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer
+  BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer
 } from "recharts";
 
+const axisProps = { stroke: "#475569", fontSize: 12, fontFamily: "var(--font-body)" };
+const tooltipStyle = {
+  background: "rgba(13,17,23,0.95)",
+  border: "1px solid rgba(255,255,255,0.10)",
+  borderRadius: 14,
+  boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+  fontFamily: "var(--font-body)",
+  fontSize: 13,
+};
+
 export default function MonthlyPage() {
-  const [data, setData] = useState<any>(null);
-
-  // const [fromDate, setFromDate] = useState("");
-  // const [toDate, setToDate] = useState("");
-
+  const [data, setData]         = useState<any>(null);
   const [fromDate, setFromDate] = useState<Date | null>(null);
-  const [toDate, setToDate] = useState<Date | null>(null);
+  const [toDate, setToDate]     = useState<Date | null>(null);
+  const [loading, setLoading]   = useState(false);
 
   useEffect(() => {
     const token = sessionStorage.getItem("token");
+    if (!token) { window.location.href = "/login"; return; }
 
+    setLoading(true);
     let url = process.env.NEXT_PUBLIC_API_URL + "/trips";
-
     if (fromDate) url += `?start=${fromDate.toISOString().split("T")[0]}`;
-    if (toDate) url += `${fromDate ? "&" : "?"}end=${toDate.toISOString().split("T")[0]}`;
+    if (toDate)   url += `${fromDate ? "&" : "?"}end=${toDate.toISOString().split("T")[0]}`;
 
-    fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
+    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
       .then(res => res.json())
-      .then(res => {
-        setData(res);
-      });
-
+      .then(res => { setData(res); setLoading(false); })
+      .catch(() => setLoading(false));
   }, [fromDate, toDate]);
 
-  if (!data) return <div className="text-white p-10">Loading...</div>;
-
   const finalData = data?.trips || [];
+  const formattedData = finalData.map((item: any) => ({
+    ...item,
+    formattedDate: item["Start Date"]
+      ? new Date(item["Start Date"]).toLocaleDateString("en-GB")
+      : ""
+  }));
 
-const formattedData = finalData.map((item: any) => ({
-  ...item,
-  formattedDate: item["Start Date"]
-    ? new Date(item["Start Date"]).toLocaleDateString("en-GB")
-    : ""
-}));
-
-  // ✅ TOTALS
-  const totalRevenue = finalData.reduce(
-    (a: any, b: any) => a + Number(b["Deal Price"] || 0), 0
-  );
-
-  const totalTrips = finalData.length;
-
-  const totalProfit = finalData.reduce(
-    (a: any, b: any) => a + Number(b["Net Profit (without Driver Salary)"] || 0), 0
-  );
-
-  const totalExpense = totalRevenue - totalProfit;
   const completed = data?.completed || {};
-  const progress = data?.progress || {};
-  const booked = data?.booked || {};
+  const progress  = data?.progress  || {};
+  const booked    = data?.booked    || {};
 
   return (
-    <div className="min-h-screen bg-black text-white p-10 space-y-6">
+    <div className="page-root">
       <Navbar />
+      <div className="page-content">
 
-      <h1 className="text-3xl font-bold">📅 Date Range Analysis</h1>
-
-      {/* FILTERS */}
-      <div className="flex gap-4 items-center">
-
-        <button
-          className="px-4 py-2 bg-blue-500 text-white rounded"
-          onClick={() => {
-            setFromDate(null);
-            setToDate(null);
-          }}
-        >
-          All Data
-        </button>
-
-        <DatePicker
-        selected={fromDate}
-        onChange={(date : Date | null) => setFromDate(date)}
-        placeholderText="FromDate"
-        className="bg-black border px-3 py-2 text-white"
-        dateFormat="dd/MM/yyyy"
-        />
-
-        <DatePicker
-        selected={toDate}
-        onChange={(date : Date | null) => setToDate(date)}
-        placeholderText="To Date"
-        className="bg-black border px-3 py-2 text-white"
-        dateFormat="dd/MM/yyyy"
-        />
-
-      </div>
-
-      {finalData.length === 0 && (
-        <div className="text-center text-gray-400 mt-10">
-          No data available for selected dates 😔
+        {/* Header */}
+        <div style={{ marginBottom: 32 }}>
+          <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>
+            Date Range Analysis
+          </h1>
+          <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Filter trips by date to analyse performance</p>
         </div>
-      )}
 
-      {/* KPI */}
-<div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-
-  <div className="bg-blue-500/20 p-6 rounded-xl">
-    <p className="text-gray-300">Revenue</p>
-    <h2 className="text-2xl font-bold">₹ {completed.revenue}</h2>
-  </div>
-
-  <div className="bg-purple-500/20 p-6 rounded-xl">
-    <p className="text-gray-300">Trips</p>
-    <h2 className="text-2xl font-bold">{completed.trips}</h2>
-  </div>
-
-  <div className="bg-red-500/20 p-6 rounded-xl">
-    <p className="text-gray-300">Pending</p>
-    <h2 className="text-2xl font-bold">₹ {completed.pending}</h2>
-  </div>
-
-  <div className="bg-green-500/20 p-6 rounded-xl">
-    <p className="text-gray-300">Received</p>
-    <h2 className="text-2xl font-bold">₹ {completed.received}</h2>
-  </div>
-
-</div>
-
-     <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> 
-      <div className="bg-yellow-500/20 p-6 rounded-xl">
-        <p className="text-gray-300">In Progress</p>
-        <p>Trips: {progress.trips}</p>
-        <p>Revenue: ₹ {progress.revenue}</p>
-        <p>Received: ₹ {progress.received}</p>
-        <p>Pending: ₹ {progress.pending}</p>
-      </div>
-
-      <div className="bg-blue-500/20 p-6 rounded-xl">
-        <p className="text-gray-300">Booked</p>
-        <p>Trips: {booked.trips}</p>
-        <p>Revenue: ₹ {booked.revenue}</p>
-        <p>Received: ₹ {booked.received}</p>
-        <p>Pending: ₹ {booked.pending}</p>
-      </div>
-  </div>
-      {/* CHART */}
-      <div className="bg-white/5 p-6 rounded-xl">
-        <h2 className="mb-4">Revenue vs Profit (Daily)</h2>
-
-        <ResponsiveContainer width="100%" height={400}>
-          <BarChart 
-          data={formattedData}
-          margin={{top:20, right:20, left:0, bottom:70}}
-          >
-            <XAxis 
-            dataKey="formattedDate"
-            angle={-90}
-            textAnchor="end"
-            interval={0}
-            height={100}
-            tick={{fontSize: 10}}  
+        {/* Filters */}
+        <section className="section">
+          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 14, padding: "16px 20px" }}>
+            <p style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 600, marginRight: 4 }}>Date range:</p>
+            <div style={{ position: "relative" }}>
+              <DatePicker
+                selected={fromDate}
+                onChange={(date: Date | null) => setFromDate(date)}
+                placeholderText="From date"
+                className="input-field"
+                dateFormat="dd/MM/yyyy"
+                wrapperClassName="date-picker-wrapper"
+              />
+            </div>
+            <span style={{ color: "var(--text-muted)", fontSize: 13 }}>→</span>
+            <DatePicker
+              selected={toDate}
+              onChange={(date: Date | null) => setToDate(date)}
+              placeholderText="To date"
+              className="input-field"
+              dateFormat="dd/MM/yyyy"
             />
-            <YAxis />
-            <Tooltip />
+            <button
+              className="btn-ghost"
+              onClick={() => { setFromDate(null); setToDate(null); }}
+            >
+              Clear
+            </button>
+            {loading && (
+              <div style={{ width: 18, height: 18, borderRadius: "50%", border: "2px solid rgba(79,142,247,0.2)", borderTopColor: "var(--accent-primary)", animation: "spin 0.7s linear infinite" }} />
+            )}
+          </div>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } } .date-picker-wrapper { display: block; } .react-datepicker-wrapper { display: block; } .react-datepicker__input-container input { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.10); border-radius: 8px; padding: 9px 13px; color: #f0f4ff; font-family: var(--font-body); font-size: 14px; outline: none; min-width: 150px; } .react-datepicker { background: #131a27; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; font-family: var(--font-body); color: #f0f4ff; } .react-datepicker__header { background: #0f1623; border-bottom: 1px solid rgba(255,255,255,0.08); border-radius: 12px 12px 0 0; } .react-datepicker__current-month, .react-datepicker__day-name { color: #94a3b8; } .react-datepicker__day { color: #f0f4ff; } .react-datepicker__day:hover { background: rgba(79,142,247,0.2); border-radius: 6px; } .react-datepicker__day--selected { background: #4f8ef7; border-radius: 6px; } .react-datepicker__navigation-icon::before { border-color: #94a3b8; }`}</style>
+        </section>
 
-            <Bar dataKey="Deal Price" fill="#3b82f6" />
-            <Bar dataKey="Net Profit (without Driver Salary)" fill="#22c55e" />
-          </BarChart>
-        </ResponsiveContainer>
+        {/* Status cards */}
+        <section className="section">
+          <div className="section-header">
+            <h2 className="section-title">Status Breakdown</h2>
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 14 }}>
+            {/* Completed */}
+            <div className="kpi-card" style={{ borderColor: "rgba(34,211,160,0.18)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>Completed</p>
+                <span className="pill pill-green" style={{ fontSize: 10 }}>{completed.trips ?? 0} trips</span>
+              </div>
+              <p style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 800, color: "var(--accent-green)", marginBottom: 8 }}>₹{(completed.revenue || 0).toLocaleString("en-IN")}</p>
+              <div style={{ fontSize: 13, color: "var(--text-secondary)", display: "flex", flexDirection: "column", gap: 3 }}>
+                <span>Received: <strong style={{ color: "var(--text-primary)" }}>₹{(completed.received || 0).toLocaleString("en-IN")}</strong></span>
+                <span>Pending: <strong style={{ color: "var(--accent-red)" }}>₹{(completed.pending || 0).toLocaleString("en-IN")}</strong></span>
+              </div>
+            </div>
+
+            {/* In Progress */}
+            <div className="kpi-card" style={{ borderColor: "rgba(249,115,22,0.18)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>In Progress</p>
+                <span className="pill pill-orange" style={{ fontSize: 10 }}>{progress.trips ?? 0} trips</span>
+              </div>
+              <p style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 800, color: "var(--accent-orange)", marginBottom: 8 }}>₹{(progress.revenue || 0).toLocaleString("en-IN")}</p>
+              <div style={{ fontSize: 13, color: "var(--text-secondary)", display: "flex", flexDirection: "column", gap: 3 }}>
+                <span>Received: <strong style={{ color: "var(--text-primary)" }}>₹{(progress.received || 0).toLocaleString("en-IN")}</strong></span>
+                <span>Pending: <strong style={{ color: "var(--accent-red)" }}>₹{(progress.pending || 0).toLocaleString("en-IN")}</strong></span>
+              </div>
+            </div>
+
+            {/* Booked */}
+            <div className="kpi-card" style={{ borderColor: "rgba(79,142,247,0.18)" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
+                <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>Booked</p>
+                <span className="pill pill-blue" style={{ fontSize: 10 }}>{booked.trips ?? 0} trips</span>
+              </div>
+              <p style={{ fontFamily: "var(--font-display)", fontSize: 24, fontWeight: 800, color: "var(--accent-primary)", marginBottom: 8 }}>₹{(booked.revenue || 0).toLocaleString("en-IN")}</p>
+              <div style={{ fontSize: 13, color: "var(--text-secondary)", display: "flex", flexDirection: "column", gap: 3 }}>
+                <span>Received: <strong style={{ color: "var(--text-primary)" }}>₹{(booked.received || 0).toLocaleString("en-IN")}</strong></span>
+                <span>Pending: <strong style={{ color: "var(--accent-red)" }}>₹{(booked.pending || 0).toLocaleString("en-IN")}</strong></span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Chart */}
+        {finalData.length > 0 ? (
+          <section className="section">
+            <div className="chart-card">
+              <h2>Deal Price vs Profit Per Trip</h2>
+              <ResponsiveContainer width="100%" height={420}>
+                <BarChart
+                  data={formattedData}
+                  margin={{ top: 10, right: 20, left: 0, bottom: 80 }}
+                >
+                  <XAxis
+                    dataKey="formattedDate"
+                    angle={-55}
+                    textAnchor="end"
+                    interval={0}
+                    height={90}
+                    {...axisProps}
+                    tick={{ fontSize: 10, fill: "#475569", fontFamily: "var(--font-body)" }}
+                  />
+                  <YAxis {...axisProps} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Legend wrapperStyle={{ fontFamily: "var(--font-body)", fontSize: 12, color: "var(--text-secondary)", paddingTop: 8 }} />
+                  <Bar dataKey="Deal Price" fill="#4f8ef7" radius={[4,4,0,0]} />
+                  <Bar dataKey="Net Profit (without Driver Salary)" name="Net Profit" fill="#22d3a0" radius={[4,4,0,0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+        ) : (
+          <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 14, padding: "48px 32px", textAlign: "center" }}>
+            <p style={{ fontSize: 32, marginBottom: 12 }}>📅</p>
+            <p style={{ color: "var(--text-secondary)", fontSize: 15, marginBottom: 6 }}>No data for selected range</p>
+            <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Try adjusting the date filters above</p>
+          </div>
+        )}
+
       </div>
-
     </div>
   );
 }
