@@ -69,7 +69,7 @@ export default function TripsPage() {
     }
 
     const data = await res.json();
-    setTrips(data || []);
+    setTrips(data?.trips || []);
   };
 
   useEffect(() => {
