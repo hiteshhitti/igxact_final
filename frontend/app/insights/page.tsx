@@ -74,7 +74,7 @@ useEffect(() => {
 useEffect(() => {
   const token = sessionStorage.getItem("token");
 
-  fetch(process.env.NEXT_PUBLIC_API_URL + "/data", {
+  fetch(process.env.NEXT_PUBLIC_API_URL + "/data?status=completed", {
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -91,7 +91,7 @@ const logout = () => {
 
 
   useEffect(() => {
-  let url = process.env.NEXT_PUBLIC_API_URL + "/data";
+  let url = process.env.NEXT_PUBLIC_API_URL + "/data?status=completed";
 
   if (year) {
     url += `?year=${year}`;
