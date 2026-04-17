@@ -166,7 +166,7 @@ def add_trip(data: dict, user=Depends(verify_token)):
     if not client:
         raise HTTPException(status_code=500, detail="Google client failed")
 
-    sheet = client.open_by_url("YOUR_SHEET_URL").sheet1
+    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0").sheet1
 
     records = sheet.get_all_records()
     headers = sheet.row_values(1)
@@ -285,7 +285,7 @@ def update_trip(trip_id: int, data: dict, user=Depends(verify_token)):
     if not client:
         raise HTTPException(status_code=500, detail="Google client failed")
 
-    sheet = client.open_by_url("YOUR_SHEET_URL").sheet1
+    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0").sheet1
 
     records = sheet.get_all_records()
     headers = sheet.row_values(1)
