@@ -420,7 +420,7 @@ const handleEdit = (trip: any) => {
       className="border border-gray-700 p-4 rounded flex justify-between items-center bg-zinc-950"
     >
       <span>
-        #{t.["trip id"]} | {t["Customer Name"]} | {t["Trip From"]} |
+        #{t["trip id"]} | {t["Customer Name"]} | {t["Trip From"]} |
 
         <span className="ml-2">
           {t.status === "completed" && "🟢 Completed"}
