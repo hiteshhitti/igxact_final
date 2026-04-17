@@ -36,6 +36,11 @@ export default function MonthlyPage() {
 
   const finalData = data;
 
+  const formattedData = finalData.map((item: any) => ({
+    ...item,
+    formattedDate: new Date(item["Start Date"]).toLocaleDateString("en-GB") // 11/01/2026
+  }));
+
   // ✅ TOTALS
   const totalRevenue = finalData.reduce(
     (a: any, b: any) => a + Number(b["Deal Price"] || 0), 0
@@ -120,8 +125,8 @@ export default function MonthlyPage() {
         <h2 className="mb-4">Revenue vs Profit (Daily)</h2>
 
         <ResponsiveContainer width="100%" height={300}>
-          <BarChart data={finalData}>
-            <XAxis dataKey="Start Date" />
+          <BarChart data={formattedData}>
+            <XAxis dataKey="formattedDate" />
             <YAxis />
             <Tooltip />
 
