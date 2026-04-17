@@ -60,9 +60,9 @@ const formattedData = finalData.map((item: any) => ({
   );
 
   const totalExpense = totalRevenue - totalProfit;
-const completed = data?.completed || {};
-const progress = data?.progress || {};
-const booked = data?.booked || {};
+  const completed = data?.completed || {};
+  const progress = data?.progress || {};
+  const booked = data?.booked || {};
 
   return (
     <div className="min-h-screen bg-black text-white p-10 space-y-6">
@@ -108,30 +108,31 @@ const booked = data?.booked || {};
       )}
 
       {/* KPI */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+<div className="grid grid-cols-1 md:grid-cols-4 gap-6">
 
-        <div className="bg-blue-500/20 p-6 rounded-xl">
-          <p className="text-gray-300">Revenue</p>
-          <h2 className="text-2xl font-bold">₹ {totalRevenue}</h2>
-        </div>
+  <div className="bg-blue-500/20 p-6 rounded-xl">
+    <p className="text-gray-300">Revenue</p>
+    <h2 className="text-2xl font-bold">₹ {completed.revenue}</h2>
+  </div>
 
-        <div className="bg-purple-500/20 p-6 rounded-xl">
-          <p className="text-gray-300">Trips</p>
-          <h2 className="text-2xl font-bold">{totalTrips}</h2>
-        </div>
+  <div className="bg-purple-500/20 p-6 rounded-xl">
+    <p className="text-gray-300">Trips</p>
+    <h2 className="text-2xl font-bold">{completed.trips}</h2>
+  </div>
 
-        <div className="bg-red-500/20 p-6 rounded-xl">
-          <p className="text-gray-300">Expense</p>
-          <h2 className="text-2xl font-bold">₹ {totalExpense}</h2>
-        </div>
+  <div className="bg-red-500/20 p-6 rounded-xl">
+    <p className="text-gray-300">Pending</p>
+    <h2 className="text-2xl font-bold">₹ {completed.pending}</h2>
+  </div>
 
-        <div className="bg-green-500/20 p-6 rounded-xl">
-          <p className="text-gray-300">Profit</p>
-          <h2 className="text-2xl font-bold">₹ {totalProfit}</h2>
-        </div>
+  <div className="bg-green-500/20 p-6 rounded-xl">
+    <p className="text-gray-300">Received</p>
+    <h2 className="text-2xl font-bold">₹ {completed.received}</h2>
+  </div>
 
-      </div>
+</div>
 
+     <div className="grid grid-cols-1 md:grid-cols-2 gap-6"> 
       <div className="bg-yellow-500/20 p-6 rounded-xl">
         <p className="text-gray-300">In Progress</p>
         <p>Trips: {progress.trips}</p>
@@ -147,7 +148,7 @@ const booked = data?.booked || {};
         <p>Received: ₹ {booked.received}</p>
         <p>Pending: ₹ {booked.pending}</p>
       </div>
-
+  </div>
       {/* CHART */}
       <div className="bg-white/5 p-6 rounded-xl">
         <h2 className="mb-4">Revenue vs Profit (Daily)</h2>
