@@ -8,6 +8,7 @@ export default function TripsPage() {
   const [form, setForm] = useState<any>({});
   const [editingId, setEditingId] = useState<number | null>(null);
   const [token, setToken] = useState<string | null>(null);
+  const [hasFiltered, setHasFiltered] = useState(false);
 
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
@@ -48,29 +49,38 @@ export default function TripsPage() {
   }, [token]);
 
   // 🔥 FETCH TRIPS
-  const fetchTrips = async () => {
-    if (!token) return;
+const fetchTrips = async () => {
+  if (!token) return;
 
-    let url = process.env.NEXT_PUBLIC_API_URL + "/trips";
+  // 🔥 NO FILTER → NO FETCH
+  if (!startDate && !endDate) {
+    setTrips([]);
+    setHasFiltered(false);
+    return;
+  }
 
-    if (startDate) url += `?start=${startDate}`;
-    if (endDate)
-      url += startDate ? `&end=${endDate}` : `?end=${endDate}`;
+  let url = process.env.NEXT_PUBLIC_API_URL + "/trips";
 
-    const res = await fetch(url, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  if (startDate) url += `?start=${startDate}`;
+  if (endDate)
+    url += startDate ? `&end=${endDate}` : `?end=${endDate}`;
 
-    if (!res.ok) {
-      console.error("API ERROR");
-      return;
-    }
+  const res = await fetch(url, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
 
-    const data = await res.json();
-    setTrips(data?.trips || []);
-  };
+  if (!res.ok) {
+    console.error("API ERROR");
+    return;
+  }
+
+  const data = await res.json();
+
+  setTrips(data?.trips || []);
+  setHasFiltered(true); // 🔥 important
+};
 
   useEffect(() => {
     if (token) fetchTrips();
@@ -268,6 +278,8 @@ export default function TripsPage() {
           onClick={() => {
             setStartDate("");
             setEndDate("");
+            setTrips([]);
+            setHasFiltered(false);
           }}
           className="bg-gray-600 px-4 py-2 rounded hover:bg-gray-700"
         >
@@ -334,25 +346,33 @@ export default function TripsPage() {
       </div>
 
       {/* LIST */}
-      <div className="space-y-3">
-        {trips.map((t: any) => (
-          <div
-            key={t.trip_id}
-            className="border border-gray-700 p-4 rounded flex justify-between items-center bg-zinc-950"
-          >
-            <span>
-              #{t.trip_id} | {t["Customer Name"]} | {t["Trip From"]}
-            </span>
+{!hasFiltered && (
+  <div className="text-gray-400 text-center mt-10">
+    Please apply a filter to view trips 📅
+  </div>
+)}
 
-            <button
-              onClick={() => handleEdit(t)}
-              className="bg-yellow-500 hover:bg-yellow-600 px-4 py-1 rounded text-black font-medium"
-            >
-              Edit
-            </button>
-          </div>
-        ))}
+{hasFiltered && (
+  <div className="space-y-3">
+    {trips.map((t: any) => (
+      <div
+        key={t.trip_id}
+        className="border border-gray-700 p-4 rounded flex justify-between items-center bg-zinc-950"
+      >
+        <span>
+          #{t.trip_id} | {t["Customer Name"]} | {t["Trip From"]}
+        </span>
+
+        <button
+          onClick={() => handleEdit(t)}
+          className="bg-yellow-500 hover:bg-yellow-600 px-4 py-1 rounded text-black font-medium"
+        >
+          Edit
+        </button>
       </div>
+    ))}
+  </div>
+)}
     </div>
   );
 }
