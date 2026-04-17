@@ -1,6 +1,8 @@
 "use client";
 
 import Navbar from "@/components/Navbar";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
 import { useEffect, useState } from "react";
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer
@@ -9,16 +11,19 @@ import {
 export default function MonthlyPage() {
   const [data, setData] = useState<any[]>([]);
 
-  const [fromDate, setFromDate] = useState("");
-  const [toDate, setToDate] = useState("");
+  // const [fromDate, setFromDate] = useState("");
+  // const [toDate, setToDate] = useState("");
+
+  const [fromDate, setFromDate] = useState<Date | null>(null);
+  const [toDate, setToDate] = useState<Date | null>(null);
 
   useEffect(() => {
     const token = sessionStorage.getItem("token");
 
     let url = process.env.NEXT_PUBLIC_API_URL + "/trips";
 
-    if (fromDate) url += `?start=${fromDate}`;
-    if (toDate) url += `${fromDate ? "&" : "?"}end=${toDate}`;
+    if (fromDate) url += `?start=${fromDate.toISOString().split("T")[0]}`;
+    if (toDate) url += `${fromDate ? "&" : "?"}end=${toDate.toISOString().split("T")[0]}`;
 
     fetch(url, {
       headers: {
@@ -66,25 +71,27 @@ export default function MonthlyPage() {
         <button
           className="px-4 py-2 bg-blue-500 text-white rounded"
           onClick={() => {
-            setFromDate("");
-            setToDate("");
+            setFromDate(null);
+            setToDate(null);
           }}
         >
           All Data
         </button>
 
-        <input
-          type="date"
-          value={fromDate}
-          onChange={(e) => setFromDate(e.target.value)}
-          className="bg-black border px-3 py-2 text-white"
+        <DatePicker
+        selected={fromDate}
+        onChange={(date : Date | null) => setFromDate(date)}
+        placeholderText="FromDate"
+        className="bg-black border px-3 py-2 text-white"
+        dateFormat="dd/MM/yyy"
         />
 
-        <input
-          type="date"
-          value={toDate}
-          onChange={(e) => setToDate(e.target.value)}
-          className="bg-black border px-3 py-2 text-white"
+        <DatePicker
+        selected={toDate}
+        onChange={(date : Date | null) => setToDate(date)}
+        placeholderText="To Date"
+        className="bg-black border px-3 py-2 text-white"
+        dateFormat="dd/MM/yyyy"
         />
 
       </div>
@@ -126,7 +133,13 @@ export default function MonthlyPage() {
 
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={formattedData}>
-            <XAxis dataKey="formattedDate" />
+            <XAxis 
+            dataKey="formattedDate"
+            angle={90}
+            textAnchor="end"
+            interval={0}
+            height={80}
+            />
             <YAxis />
             <Tooltip />
 
