@@ -23,6 +23,7 @@ export default function InsightsPage() {
   const [loading, setLoading] = useState(false);
 
 
+
   const handleLogin = async () => {
   if (!username || !password) {
     alert("Enter username & password");

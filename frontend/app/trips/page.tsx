@@ -15,6 +15,8 @@ export default function TripsPage() {
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate] = useState<Date | null>(null);
 
+  const [editIndex, setEditIndex] = useState<number | null>(null);
+
   // =========================
   // 🔥 AUTO ID GENERATOR
   // =========================
@@ -235,20 +237,48 @@ const fetchTrips = async () => {
   // =========================
   // 🔥 EDIT HANDLER
   // =========================
-  const handleEdit = (trip: any) => {
-    const editableForm = { ...trip };
+const handleEdit = (trip: any) => {
+  if (!trip) return;
 
-    // Convert dates back to YYYY-MM-DD for date inputs
+    const editableForm: any = {
+      ...trip,
+
+      // Default values (important for controlled inputs)
+      status: trip.status || "booked",
+    };
+
+    // ✅ Safe date conversion
     if (trip["Start Date"]) {
-      editableForm["Start Date"] = convertToInputDate(trip["Start Date"]);
-    }
-    if (trip["End date"]) {
-      editableForm["End date"] = convertToInputDate(trip["End date"]);
+      try {
+        editableForm["Start Date"] = convertToInputDate(trip["Start Date"]);
+      } catch {
+        editableForm["Start Date"] = "";
+      }
+    } else {
+      editableForm["Start Date"] = "";
     }
 
+    if (trip["End date"]) {
+      try {
+        editableForm["End date"] = convertToInputDate(trip["End date"]);
+      } catch {
+        editableForm["End date"] = "";
+      }
+    } else {
+      editableForm["End date"] = "";
+    }
+
+    // ✅ Set form
     setForm(editableForm);
+
+    // ✅ Set edit mode
     setEditingId(trip.trip_id);
-    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    // ✅ Smooth scroll to form
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
   };
 
   return (
@@ -299,41 +329,60 @@ const fetchTrips = async () => {
 
       {/* FORM */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-        {Array.isArray(columns) &&
-          columns.map((col) => {
-            if (
-              col === "trip_id" ||
-              col === "Profit Percentage" ||
-              col === "Net Profit (without Driver Salary)" ||
-              col === "Profit without commission"
-            )
-              return null;
+  {Array.isArray(columns) &&
+    columns.map((col) => {
+      if (
+        col === "trip_id" ||
+        col === "Profit Percentage" ||
+        col === "Net Profit (without Driver Salary)" ||
+        col === "Profit without commission"
+      )
+        return null;
 
-            return (
-              <input
-                key={col}
-                type={
-                  col.toLowerCase().includes("date")
-                    ? "date"
-                    : col.toLowerCase().includes("price") ||
-                      col.toLowerCase().includes("fuel") ||
-                      col.toLowerCase().includes("toll") ||
-                      col.toLowerCase().includes("parking") ||
-                      col.toLowerCase().includes("allowance") ||
-                      col.toLowerCase().includes("commiss")
-                    ? "number"
-                    : "text"
-                }
-                placeholder={col}
-                value={form[col] || ""}
-                onChange={(e) =>
-                  setForm({ ...form, [col]: e.target.value })
-                }
-                className="bg-black border border-gray-600 p-3 rounded focus:outline-none focus:border-blue-500"
-              />
-            );
-          })}
-      </div>
+      // ✅ STATUS DROPDOWN
+      if (col.toLowerCase() === "status") {
+        return (
+          <select
+            key={col}
+            value={form[col] || "booked"}
+            onChange={(e) =>
+              setForm({ ...form, [col]: e.target.value })
+            }
+            className="bg-black border border-gray-600 p-3 rounded focus:outline-none focus:border-blue-500"
+          >
+            <option value="booked">Booked</option>
+            <option value="progress">In Progress</option>
+            <option value="completed">Completed</option>
+          </select>
+        );
+      }
+
+      // ✅ NORMAL INPUTS
+      return (
+        <input
+          key={col}
+          type={
+            col.toLowerCase().includes("date")
+              ? "date"
+              : col.toLowerCase().includes("price") ||
+                col.toLowerCase().includes("fuel") ||
+                col.toLowerCase().includes("toll") ||
+                col.toLowerCase().includes("parking") ||
+                col.toLowerCase().includes("allowance") ||
+                col.toLowerCase().includes("commiss")
+              ? "number"
+              : "text"
+          }
+          placeholder={col}
+          value={form[col] || ""}
+          onChange={(e) =>
+            setForm({ ...form, [col]: e.target.value })
+          }
+          className="bg-black border border-gray-600 p-3 rounded focus:outline-none focus:border-blue-500"
+        />
+      );
+    })}
+</div>
 
       <button
         onClick={handleSubmit}
@@ -363,25 +412,31 @@ const fetchTrips = async () => {
 )}
 
 {hasFiltered && (
-  <div className="space-y-3">
-    {trips.map((t: any) => (
-      <div
-        key={t.trip_id}
-        className="border border-gray-700 p-4 rounded flex justify-between items-center bg-zinc-950"
-      >
-        <span>
-          #{t.trip_id} | {t["Customer Name"]} | {t["Trip From"]}
-        </span>
+<div className="space-y-3">
+  {trips.map((t: any) => (
+    <div
+      key={t.trip_id}
+      className="border border-gray-700 p-4 rounded flex justify-between items-center bg-zinc-950"
+    >
+      <span>
+        #{t.trip_id} | {t["Customer Name"]} | {t["Trip From"]} |
 
-        <button
-          onClick={() => handleEdit(t)}
-          className="bg-yellow-500 hover:bg-yellow-600 px-4 py-1 rounded text-black font-medium"
-        >
-          Edit
-        </button>
-      </div>
-    ))}
-  </div>
+        <span className="ml-2">
+          {t.status === "completed" && "🟢 Completed"}
+          {t.status === "progress" && "🟡 In Progress"}
+          {t.status === "booked" && "🔵 Booked"}
+        </span>
+      </span>
+
+      <button
+        onClick={() => handleEdit(t)}
+        className="bg-yellow-500 hover:bg-yellow-600 px-4 py-1 rounded text-black"
+      >
+        Edit
+      </button>
+    </div>
+  ))}
+</div>
 )}
     </div>
   );
