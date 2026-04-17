@@ -7,16 +7,18 @@ import {
 } from "recharts";
 
 export default function MonthlyPage() {
-  const [data, setData] = useState<any>(null);
+  const [data, setData] = useState<any[]>([]);
 
-  // 🔥 NEW DATE FILTER STATES
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
 
   useEffect(() => {
-    let url = process.env.NEXT_PUBLIC_API_URL + "/data";
-
     const token = sessionStorage.getItem("token");
+
+    let url = process.env.NEXT_PUBLIC_API_URL + "/trips";
+
+    if (fromDate) url += `?start=${fromDate}`;
+    if (toDate) url += `${fromDate ? "&" : "?"}end=${toDate}`;
 
     fetch(url, {
       headers: {
@@ -28,36 +30,32 @@ export default function MonthlyPage() {
         setData(res);
       });
 
-  }, []);
+  }, [fromDate, toDate]);
 
   if (!data) return <div className="text-white p-10">Loading...</div>;
 
-  const monthlyData = data.monthly || [];
+  const finalData = data;
 
-  // 🔥 DATE FILTER LOGIC
-  const finalData = monthlyData.filter((item: any) => {
-    if (!fromDate || !toDate) return true;
+  // ✅ TOTALS
+  const totalRevenue = finalData.reduce(
+    (a: any, b: any) => a + Number(b["Deal Price"] || 0), 0
+  );
 
-    const itemDate = new Date(item.Date);
-    const from = new Date(fromDate);
-    const to = new Date(toDate);
+  const totalTrips = finalData.length;
 
-    return itemDate >= from && itemDate <= to;
-  });
+  const totalProfit = finalData.reduce(
+    (a: any, b: any) => a + Number(b["Net Profit (without Driver Salary)"] || 0), 0
+  );
 
-  // 🔥 TOTALS FROM FILTERED DATA
-  const totalRevenue = finalData.reduce((a:any,b:any)=>a+b.Revenue,0);
-  const totalTrips = finalData.reduce((a:any,b:any)=>a+b.Trips,0);
-  const totalProfit = finalData.reduce((a:any,b:any)=>a+b.NetProfit,0);
   const totalExpense = totalRevenue - totalProfit;
 
   return (
     <div className="min-h-screen bg-black text-white p-10 space-y-6">
       <Navbar />
 
-      <h1 className="text-3xl font-bold">📅 Monthly Analysis</h1>
+      <h1 className="text-3xl font-bold">📅 Date Range Analysis</h1>
 
-      {/* 🔥 NEW FILTER UI */}
+      {/* FILTERS */}
       <div className="flex gap-4 items-center">
 
         <button
@@ -74,14 +72,14 @@ export default function MonthlyPage() {
           type="date"
           value={fromDate}
           onChange={(e) => setFromDate(e.target.value)}
-          className="bg-black border px-3 py-2"
+          className="bg-black border px-3 py-2 text-white"
         />
 
         <input
           type="date"
           value={toDate}
           onChange={(e) => setToDate(e.target.value)}
-          className="bg-black border px-3 py-2"
+          className="bg-black border px-3 py-2 text-white"
         />
 
       </div>
@@ -92,7 +90,7 @@ export default function MonthlyPage() {
         </div>
       )}
 
-      {/* KPI TABLE */}
+      {/* KPI */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
 
         <div className="bg-blue-500/20 p-6 rounded-xl">
@@ -119,17 +117,16 @@ export default function MonthlyPage() {
 
       {/* CHART */}
       <div className="bg-white/5 p-6 rounded-xl">
-        <h2 className="mb-4">Revenue vs Profit</h2>
+        <h2 className="mb-4">Revenue vs Profit (Daily)</h2>
 
         <ResponsiveContainer width="100%" height={300}>
           <BarChart data={finalData}>
-            <XAxis dataKey="Month" />
+            <XAxis dataKey="Start Date" />
             <YAxis />
             <Tooltip />
 
-            <Bar dataKey="Revenue" fill="#3b82f6" />
-            <Bar dataKey="NetProfit" fill="#22c55e" />
-            <Bar dataKey="TotalExpense" fill="#ef4444" />
+            <Bar dataKey="Deal Price" fill="#3b82f6" />
+            <Bar dataKey="Net Profit (without Driver Salary)" fill="#22c55e" />
           </BarChart>
         </ResponsiveContainer>
       </div>
