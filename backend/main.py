@@ -212,20 +212,60 @@ def get_trips(
     client = get_client()
     if not client:
         raise HTTPException(status_code=500, detail="Google client failed")
-    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0").sheet1
 
+    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0").sheet1
     data = sheet.get_all_records()
+
     df = pd.DataFrame(data)
 
-    # df['Start Date'] = pd.to_datetime(df['Start Date'], errors='coerce')
+    # ✅ DATE
     df['Start Date'] = pd.to_datetime(df['Start Date'], errors='coerce')
 
+    # ✅ FILTER
     if start:
         df = df[df['Start Date'] >= pd.to_datetime(start)]
     if end:
         df = df[df['Start Date'] <= pd.to_datetime(end)]
 
-    return df.fillna("").to_dict(orient="records")
+    # ✅ CLEAN NUMBERS
+    def clean(col):
+        if col not in df.columns:
+            return 0
+        return pd.to_numeric(
+            df[col].astype(str).str.replace(',', ''),
+            errors='coerce'
+        ).fillna(0)
+
+    df['Deal Price'] = clean('Deal Price')
+    df['AdvanceCash'] = clean('Booking Amt/Advance Cash')
+    df['AdvanceBank'] = clean('Booking Amt/Advance Bank')
+
+    df['Received'] = df['AdvanceCash'] + df['AdvanceBank']
+    df['Pending'] = df['Deal Price'] - df['Received']
+
+    # ✅ STATUS CLEAN
+    df['Status'] = df['Status'].astype(str).str.strip().str.lower()
+
+    # 🔥 SPLIT
+    df_completed = df[df['Status'].str.contains('completed', na=False)]
+    df_progress = df[df['Status'].str.contains('progress', na=False)]
+    df_booked = df[df['Status'].str.contains('booked', na=False)]
+
+    # ✅ SUMMARY FUNCTION
+    def summary(d):
+        return {
+            "trips": int(len(d)),
+            "revenue": float(d['Deal Price'].sum()),
+            "received": float(d['Received'].sum()),
+            "pending": float(d['Pending'].sum())
+        }
+
+    return {
+        "completed": summary(df_completed),
+        "progress": summary(df_progress),
+        "booked": summary(df_booked),
+        "trips": df.fillna("").to_dict(orient="records")
+    }
 
 @app.put("/update-trip/{trip_id}")
 def update_trip(trip_id: int, data: dict, user=Depends(verify_token)):

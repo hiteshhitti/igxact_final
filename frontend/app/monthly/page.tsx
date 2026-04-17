@@ -9,7 +9,7 @@ import {
 } from "recharts";
 
 export default function MonthlyPage() {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<any>(null);
 
   // const [fromDate, setFromDate] = useState("");
   // const [toDate, setToDate] = useState("");
@@ -39,12 +39,14 @@ export default function MonthlyPage() {
 
   if (!data) return <div className="text-white p-10">Loading...</div>;
 
-  const finalData = data;
+  const finalData = data?.trips || [];
 
-  const formattedData = finalData.map((item: any) => ({
-    ...item,
-    formattedDate: new Date(item["Start Date"]).toLocaleDateString("en-GB") // 11/01/2026
-  }));
+const formattedData = finalData.map((item: any) => ({
+  ...item,
+  formattedDate: item["Start Date"]
+    ? new Date(item["Start Date"]).toLocaleDateString("en-GB")
+    : ""
+}));
 
   // ✅ TOTALS
   const totalRevenue = finalData.reduce(
@@ -58,6 +60,9 @@ export default function MonthlyPage() {
   );
 
   const totalExpense = totalRevenue - totalProfit;
+const completed = data?.completed || {};
+const progress = data?.progress || {};
+const booked = data?.booked || {};
 
   return (
     <div className="min-h-screen bg-black text-white p-10 space-y-6">
@@ -83,7 +88,7 @@ export default function MonthlyPage() {
         onChange={(date : Date | null) => setFromDate(date)}
         placeholderText="FromDate"
         className="bg-black border px-3 py-2 text-white"
-        dateFormat="dd/MM/yyy"
+        dateFormat="dd/MM/yyyy"
         />
 
         <DatePicker
@@ -125,6 +130,22 @@ export default function MonthlyPage() {
           <h2 className="text-2xl font-bold">₹ {totalProfit}</h2>
         </div>
 
+      </div>
+
+      <div className="bg-yellow-500/20 p-6 rounded-xl">
+        <p className="text-gray-300">In Progress</p>
+        <p>Trips: {progress.trips}</p>
+        <p>Revenue: ₹ {progress.revenue}</p>
+        <p>Received: ₹ {progress.received}</p>
+        <p>Pending: ₹ {progress.pending}</p>
+      </div>
+
+      <div className="bg-blue-500/20 p-6 rounded-xl">
+        <p className="text-gray-300">Booked</p>
+        <p>Trips: {booked.trips}</p>
+        <p>Revenue: ₹ {booked.revenue}</p>
+        <p>Received: ₹ {booked.received}</p>
+        <p>Pending: ₹ {booked.pending}</p>
       </div>
 
       {/* CHART */}
