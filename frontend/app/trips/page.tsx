@@ -16,11 +16,12 @@ export default function TripsPage() {
   const [endDate, setEndDate] = useState<Date | null>(null);
 
   const [editIndex, setEditIndex] = useState<number | null>(null);
+  
 
   // =========================
   // 🔥 AUTO ID GENERATOR
   // =========================
-  const generateId = () => `TRIP-${Date.now()}`;
+  // const generateId = () => `TRIP-${Date.now()}`;
 
   // 🔐 TOKEN
   useEffect(() => {
@@ -194,7 +195,7 @@ const fetchTrips = async () => {
       ...form,
       "Start Date": formatToSheetDate(form["Start Date"] || ""),
       "End date": formatToSheetDate(form["End date"] || ""),
-      trip_id: editingId || generateId(),
+      "trip id": editingId ?? undefined,
       "Net Profit (without Driver Salary)": netProfit,
       "Profit without commission": profitWithoutCommission,
       "Profit Percentage": Number(profitPercent),
@@ -272,7 +273,7 @@ const handleEdit = (trip: any) => {
     setForm(editableForm);
 
     // ✅ Set edit mode
-    setEditingId(trip.trip_id);
+    setEditingId(trip["trip id"]);
 
     // ✅ Smooth scroll to form
     window.scrollTo({
@@ -332,7 +333,7 @@ const handleEdit = (trip: any) => {
   {Array.isArray(columns) &&
     columns.map((col) => {
       if (
-        col === "trip_id" ||
+        col === "trip id" ||
         col === "Profit Percentage" ||
         col === "Net Profit (without Driver Salary)" ||
         col === "Profit without commission"
@@ -415,11 +416,11 @@ const handleEdit = (trip: any) => {
 <div className="space-y-3">
   {trips.map((t: any) => (
     <div
-      key={t.trip_id}
+      key={t["trip id"]}
       className="border border-gray-700 p-4 rounded flex justify-between items-center bg-zinc-950"
     >
       <span>
-        #{t.trip_id} | {t["Customer Name"]} | {t["Trip From"]} |
+        #{t.["trip id"]} | {t["Customer Name"]} | {t["Trip From"]} |
 
         <span className="ml-2">
           {t.status === "completed" && "🟢 Completed"}

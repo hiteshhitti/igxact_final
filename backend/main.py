@@ -165,16 +165,28 @@ def add_trip(data: dict, user=Depends(verify_token)):
     client = get_client()
     if not client:
         raise HTTPException(status_code=500, detail="Google client failed")
-    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0").sheet1
 
-    # generate trip_id
-    existing = sheet.get_all_records()
-    trip_id = len(existing) + 1
+    sheet = client.open_by_url("YOUR_SHEET_URL").sheet1
 
+    records = sheet.get_all_records()
     headers = sheet.row_values(1)
 
-    row = []
+    # 🔥 FIND LAST ID
+    trip_ids = []
 
+    for row in records:
+        for key in row.keys():
+            if key.strip().lower() == "trip id":
+                try:
+                    trip_ids.append(int(row[key]))
+                except:
+                    pass
+
+    last_id = max(trip_ids) if trip_ids else (START_ID - 1)
+    trip_id = last_id + 1
+
+    # 🔥 BUILD ROW
+    row = []
     for col in headers:
         if col.strip().lower() == "trip id":
             row.append(trip_id)
@@ -272,9 +284,11 @@ def update_trip(trip_id: int, data: dict, user=Depends(verify_token)):
     client = get_client()
     if not client:
         raise HTTPException(status_code=500, detail="Google client failed")
-    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0").sheet1
+
+    sheet = client.open_by_url("YOUR_SHEET_URL").sheet1
 
     records = sheet.get_all_records()
+    headers = sheet.row_values(1)
 
     for i, row in enumerate(records):
         trip_key = None
@@ -292,13 +306,18 @@ def update_trip(trip_id: int, data: dict, user=Depends(verify_token)):
             value = 0
 
         if trip_key and value == trip_id:
-            row_index = i + 2  # header skip
+            row_index = i + 2  # skip header
 
-            sheet.update(f"B{row_index}", data.get("Customer Name"))
-            sheet.update(f"C{row_index}", data.get("Trip From"))
-            sheet.update(f"D{row_index}", data.get("Trip TO"))
-            sheet.update(f"E{row_index}", data.get("Start Date"))
-            sheet.update(f"F{row_index}", data.get("Deal Price"))
+            updated_row = []
+
+            for col in headers:
+                if col.strip().lower() == "trip id":
+                    updated_row.append(trip_id)
+                else:
+                    updated_row.append(data.get(col, ""))
+
+            # 🔥 FULL ROW UPDATE
+            sheet.update(f"A{row_index}", [updated_row])
 
             return {"msg": "Updated successfully"}
 
