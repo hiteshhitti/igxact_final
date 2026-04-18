@@ -17,6 +17,7 @@ import os
 from dotenv import load_dotenv
 import traceback
 from routes.auth import router as auth_router
+from utils import verify_password, hash_password, verify_token
 
 load_dotenv()
 
@@ -28,13 +29,7 @@ security = HTTPBearer()
 
 
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-def hash_password(password: str):
-    return pwd_context.hash(password)
-
-def verify_password(plain, hashed):
-    return pwd_context.verify(plain, hashed)
 
 
 SECRET_KEY = os.getenv("SECRET_KEY")
@@ -45,9 +40,7 @@ if not SECRET_KEY:
 ALGORITHM = "HS256"
 
 
-def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    token = credentials.credentials
-    return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
 
 
 

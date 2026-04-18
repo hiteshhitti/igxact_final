@@ -6,7 +6,7 @@ from pydantic import BaseModel
 
 from database import SessionLocal
 from models import User
-from main import verify_password, hash_password, verify_token   # 🔥 IMPORTANT
+from utils import verify_password, hash_password, verify_token
 
 router = APIRouter()
 
