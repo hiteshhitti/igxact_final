@@ -16,10 +16,13 @@ import json
 import os
 from dotenv import load_dotenv
 import traceback
+from routes.auth import router as auth_router
 
 load_dotenv()
 
 app = FastAPI()
+
+app.include_router(auth_router)
 
 security = HTTPBearer()
 
@@ -143,22 +146,6 @@ def login(data: LoginRequest):
 
 
 
-
-@app.post("/change-password")
-def change_password(data: dict, user=Depends(verify_token)):
-    db: Session = SessionLocal()
-    try:
-        current_user = db.query(User).filter(User.username == user["sub"]).first()
-
-        if not verify_password(data["old_password"], current_user.password):
-            raise HTTPException(status_code=400, detail="Wrong old password")
-
-        current_user.password = hash_password(data["new_password"])
-        db.commit()
-
-        return {"msg": "Password updated"}
-    finally:
-        db.close()
 
 @app.post("/add-trip")
 def add_trip(data: dict, user=Depends(verify_token)):

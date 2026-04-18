@@ -1,5 +1,6 @@
 "use client";
 import Navbar from "@/components/Navbar";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useSmoothRouter } from "@/components/UseSmoothRouter";
 import {
@@ -9,6 +10,8 @@ import {
 
 const COST_COLORS    = ['#4f8ef7', '#22d3a0', '#a78bfa', '#f97316', '#f87171'];
 const PAYMENT_COLORS = ['#f97316', '#4f8ef7'];
+
+
 
 const tooltipStyle = {
   background: "rgba(13,17,23,0.95)",
@@ -73,6 +76,7 @@ export default function Home() {
   const [years, setYears] = useState<number[]>([]);
   const [data, setData] = useState<any>(null);
   const { push } = useSmoothRouter();
+  const router = useRouter();
 
   useEffect(() => {
     const token = sessionStorage.getItem("token");
@@ -131,6 +135,14 @@ export default function Home() {
             <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>
               Dashboard
             </h1>
+
+              <button
+                onClick={() => router.push("/change-password")}
+                className="text-gray-400 hover:text-white text-xl"
+                title="Change Password"
+              >
+                ⚙️
+              </button>
             <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Your travel business at a glance</p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
