@@ -16,7 +16,7 @@ import json
 import os
 from dotenv import load_dotenv
 import traceback
-from routes.auth import router as auth_router
+from auth import router as auth_router
 from utils import verify_password, hash_password, verify_token
 
 load_dotenv()
