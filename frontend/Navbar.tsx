@@ -2,6 +2,7 @@
 
 import { useSmoothRouter } from "@/components/UseSmoothRouter";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 
 const NAV_ITEMS = [
   { label: "Dashboard", href: "/" },
@@ -13,11 +14,27 @@ const NAV_ITEMS = [
 export default function Navbar() {
   const { push } = useSmoothRouter();
   const pathname = usePathname();
+  const [role, setRole] = useState<string | null>(null);
 
   const logout = () => {
     sessionStorage.removeItem("token");
+    sessionStorage.removeItem("role");
     window.location.href = "/login";
   };
+
+  useEffect(() => {
+    const storedRole = sessionStorage.getItem("role");
+    setRole(storedRole);
+  }, []);
+
+  const filteredNavItems = NAV_ITEMS.filter(item => {
+    if (item.href === "/trips" && role !== "admin") {
+      return false;
+    }
+    return true;
+  });
+
+  if (role === null) return null;
 
   return (
     <nav className="nav-root">
@@ -48,7 +65,8 @@ export default function Navbar() {
 
         {/* Nav Links */}
         <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
-          {NAV_ITEMS.map(item => (
+          
+          {filteredNavItems.map(item => (
             <button
               key={item.href}
               className={`nav-link ${pathname === item.href ? "active" : ""}`}
