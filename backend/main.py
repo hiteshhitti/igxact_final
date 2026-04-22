@@ -221,7 +221,7 @@ def get_trips(
 
     if trip_id:
         # 🥇 Trip ID only
-        df = df[df["Trip ID"].astype(str) == str(trip_id)]
+        df = df[df["trip id"].astype(str) == str(trip_id)]
 
     else:
         # 🥈 Date filters
