@@ -199,25 +199,43 @@ def get_columns(user=Depends(verify_token)):
 def get_trips(
     start: str = Query(None),
     end: str = Query(None),
+    trip_id: str = Query(None),
+    mobile: str = Query(None),
     user=Depends(verify_token)
 ):
     client = get_client()
     if not client:
         raise HTTPException(status_code=500, detail="Google client failed")
 
-    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0").sheet1
-    data = sheet.get_all_records()
+    sheet = client.open_by_url(
+        "https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0"
+    ).sheet1
 
+    data = sheet.get_all_records()
     df = pd.DataFrame(data)
 
-    # ✅ DATE
+    # ✅ DATE CLEAN
     df['Start Date'] = pd.to_datetime(df['Start Date'], errors='coerce')
 
-    # ✅ FILTER
-    if start:
-        df = df[df['Start Date'] >= pd.to_datetime(start)]
-    if end:
-        df = df[df['Start Date'] <= pd.to_datetime(end)]
+    # 🔥 PRIORITY FILTER SYSTEM
+
+    if trip_id:
+        # 🥇 Trip ID only
+        df = df[df["Trip ID"].astype(str) == str(trip_id)]
+
+    else:
+        # 🥈 Date filters
+        if start:
+            df = df[df['Start Date'] >= pd.to_datetime(start)]
+
+        if end:
+            df = df[df['Start Date'] <= pd.to_datetime(end)]
+
+        # 🥉 Mobile filter (date ke saath combine)
+        if mobile:
+            df["Cust. Contact Number"] = df["Cust. Contact Number"].astype(str).str.replace(" ", "")
+            mobile_clean = mobile.replace(" ", "")
+            df = df[df["Cust. Contact Number"].str.contains(mobile_clean)]
 
     # ✅ CLEAN NUMBERS
     def clean(col):
@@ -235,8 +253,22 @@ def get_trips(
     df['Received'] = df['AdvanceCash'] + df['AdvanceBank']
     df['Pending'] = df['Deal Price'] - df['Received']
 
+    df['Status'] = df['Status'].astype(str).str.strip().str.lower()
+
+    return {
+        "trips": df.fillna("").to_dict(orient="records")
+    }
+
+    df['Deal Price'] = clean('Deal Price')
+    df['AdvanceCash'] = clean('Booking Amt/Advance Cash')
+    df['AdvanceBank'] = clean('Booking Amt/Advance Bank')
+
+    df['Received'] = df['AdvanceCash'] + df['AdvanceBank']
+    df['Pending'] = df['Deal Price'] - df['Received']
+
     # ✅ STATUS CLEAN
     df['Status'] = df['Status'].astype(str).str.strip().str.lower()
+
 
     # 🔥 SPLIT
     df_completed = df[df['Status'].str.contains('completed', na=False)]
@@ -339,7 +371,9 @@ def build_pipeline(df_src):
 def get_data(year: int = Query(None), 
              user=Depends(verify_token),
              month: int = Query(None), 
-             status: str = Query("all")
+             status: str = Query("all"),
+             trip_id: str = Query(None),
+             mobile: str = Query(None)
              ):
     try:
         # 📥 Load data
@@ -411,6 +445,21 @@ def get_data(year: int = Query(None),
 
         df['Status'] = df['Status'].astype(str).str.strip().str.lower()
 
+        if trip_id:
+            # 🥇 Trip ID only
+            df = df[df["Trip ID"].astype(str) == str(trip_id)]
+
+        else:
+            # 🥈 Mobile (optional)
+            if mobile:
+                df["Cust. Contact Number"] = df["Cust. Contact Number"].astype(str).str.replace(" ", "")
+                mobile_clean = mobile.replace(" ", "")
+                df = df[df["Cust. Contact Number"].str.contains(mobile_clean)]
+            if year:
+                df = df[df['Year'] == year]
+
+            if month:
+                df = df[df['MonthNum'] == month]
 
         
 
@@ -430,8 +479,8 @@ def get_data(year: int = Query(None),
 
         years = sorted(df['Year'].dropna().unique().tolist())
 
-        if year:
-            df = df[df['Year'] == year]
+        # if year:
+        #     df = df[df['Year'] == year]
         
         # if year is None:
         #     year = df['Year'].max()

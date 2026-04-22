@@ -41,6 +41,8 @@ export default function TripsPage() {
   const [endDate, setEndDate]     = useState<Date | null>(null);
   const [loading, setLoading]     = useState(false);
   const [saving, setSaving]       = useState(false);
+  const [tripId, setTripId] = useState("");
+  const [mobile, setMobile] = useState("");
 
   useEffect(() => {
     const t = sessionStorage.getItem("token");
@@ -56,15 +58,52 @@ export default function TripsPage() {
       .catch(() => setColumns([]));
   }, [token]);
 
-  const fetchTrips = async () => {
+const fetchTrips = async () => {
     if (!token) return;
-    if (!startDate && !endDate) { setTrips([]); setHasFiltered(false); return; }
+
+    // ❗ ab sirf tab empty return kare jab koi bhi filter na ho
+    if (!startDate && !endDate && !tripId && !mobile) {
+      setTrips([]);
+      setHasFiltered(false);
+      return;
+    }
+
     setLoading(true);
+
     let url = process.env.NEXT_PUBLIC_API_URL + "/trips";
-    if (startDate) url += `?start=${startDate.toISOString().split("T")[0]}`;
-    if (endDate)   url += `${startDate ? "&" : "?"}end=${endDate.toISOString().split("T")[0]}`;
-    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-    if (res.ok) { const data = await res.json(); setTrips(data?.trips || []); setHasFiltered(true); }
+
+    const params = new URLSearchParams();
+
+    // date filters
+    if (startDate) {
+      params.append("start", startDate.toISOString().split("T")[0]);
+    }
+
+    if (endDate) {
+      params.append("end", endDate.toISOString().split("T")[0]);
+    }
+
+    // 🔥 new filters
+    if (tripId) {
+      params.append("trip_id", tripId);
+    }
+
+    if (mobile) {
+      params.append("mobile", mobile);
+    }
+
+    url += "?" + params.toString();
+
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      setTrips(data?.trips || []);
+      setHasFiltered(true);
+    }
+
     setLoading(false);
   };
 
@@ -271,6 +310,28 @@ export default function TripsPage() {
             <button className="btn-ghost"    style={{ padding: "8px 14px", fontSize: 13 }} onClick={() => { setStartDate(null); setEndDate(null); setTrips([]); setHasFiltered(false); }}>Reset</button>
             {loading && <div style={{ width: 18, height: 18, borderRadius: "50%", border: "2px solid rgba(37,99,235,0.20)", borderTopColor: "var(--accent-primary)", animation: "spin 0.7s linear infinite" }} />}
           </div>
+
+                  <input
+                      type="text"
+                      placeholder="Trip ID"
+                      value={tripId}
+                      onChange={(e) => {
+                        setTripId(e.target.value);
+                        if (e.target.value) setMobile("");
+                      }}
+                      className="input-field"
+                    />
+
+                    <input
+                      type="text"
+                      placeholder="Mobile Number"
+                      value={mobile}
+                      onChange={(e) => {
+                        setMobile(e.target.value);
+                        if (e.target.value) setTripId("");
+                      }}
+                      className="input-field"
+                    />
 
           {!hasFiltered && (
             <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 14, padding: "48px 32px", textAlign: "center" }}>
