@@ -316,72 +316,39 @@ def get_trips(
         df["Received"] = df["AdvanceCash"] + df["AdvanceBank"]
         df["Pending"] = df["Deal Price"] - df["Received"]
 
-        # 🔥 SAFE STATUS
-        if "Status" in df.columns:
-            df["Status"] = df["Status"].astype(str).str.strip().str.lower()
+        # ✅ STATUS SAFE
+        if "Status" not in df.columns:
+            df["Status"] = ""
 
+        df["Status"] = df["Status"].astype(str).str.strip().str.lower()
+        df["Status"] = df["Status"].str.replace("in progress", "progress")
+
+        # ✅ SPLIT
+        df_completed = df[df["Status"].str.contains("completed", na=False)]
+        df_progress  = df[df["Status"].str.contains("progress",  na=False)]
+        df_booked    = df[df["Status"].str.contains("booked",    na=False)]
+
+        # ✅ SUMMARY
+        def summary(d):
+            return {
+                "trips": int(len(d)),
+                "revenue": float(d["Deal Price"].sum()),
+                "received": float(d["Received"].sum()),
+                "pending": float(d["Pending"].sum())
+            }
+
+        # ✅ FINAL RETURN (ONLY ONE RETURN)
         return {
+            "completed": summary(df_completed),
+            "progress": summary(df_progress),
+            "booked": summary(df_booked),
             "trips": df.fillna("").to_dict(orient="records")
         }
-
+    
     except Exception as e:
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
-
-    # ✅ CLEAN NUMBERS
-    def clean(col):
-        if col not in df.columns:
-            return 0
-        return pd.to_numeric(
-            df[col].astype(str).str.replace(',', ''),
-            errors='coerce'
-        ).fillna(0)
-
-    df['Deal Price'] = clean('Deal Price')
-    df['AdvanceCash'] = clean('Booking Amt/Advance Cash')
-    df['AdvanceBank'] = clean('Booking Amt/Advance Bank')
-
-    df['Received'] = df['AdvanceCash'] + df['AdvanceBank']
-    df['Pending'] = df['Deal Price'] - df['Received']
-
-    df['Status'] = df['Status'].astype(str).str.strip().str.lower()
-
-    return {
-        "trips": df.fillna("").to_dict(orient="records")
-    }
-
-    df['Deal Price'] = clean('Deal Price')
-    df['AdvanceCash'] = clean('Booking Amt/Advance Cash')
-    df['AdvanceBank'] = clean('Booking Amt/Advance Bank')
-
-    df['Received'] = df['AdvanceCash'] + df['AdvanceBank']
-    df['Pending'] = df['Deal Price'] - df['Received']
-
-    # ✅ STATUS CLEAN
-    df['Status'] = df['Status'].astype(str).str.strip().str.lower()
-
-
-    # 🔥 SPLIT
-    df_completed = df[df['Status'].str.contains('completed', na=False)]
-    df_progress = df[df['Status'].str.contains('progress', na=False)]
-    df_booked = df[df['Status'].str.contains('booked', na=False)]
-
-    # ✅ SUMMARY FUNCTION
-    def summary(d):
-        return {
-            "trips": int(len(d)),
-            "revenue": float(d['Deal Price'].sum()),
-            "received": float(d['Received'].sum()),
-            "pending": float(d['Pending'].sum())
-        }
-
-    return {
-        "completed": summary(df_completed),
-        "progress": summary(df_progress),
-        "booked": summary(df_booked),
-        "trips": df.fillna("").to_dict(orient="records")
-    }
 
 @app.put("/update-trip/{trip_id}")
 def update_trip(trip_id: int, data: dict, user=Depends(verify_token)):
