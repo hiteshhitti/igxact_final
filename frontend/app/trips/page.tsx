@@ -311,27 +311,44 @@ const fetchTrips = async () => {
             {loading && <div style={{ width: 18, height: 18, borderRadius: "50%", border: "2px solid rgba(37,99,235,0.20)", borderTopColor: "var(--accent-primary)", animation: "spin 0.7s linear infinite" }} />}
           </div>
 
-                  <input
-                      type="text"
-                      placeholder="Trip ID"
-                      value={tripId}
-                      onChange={(e) => {
-                        setTripId(e.target.value);
-                        if (e.target.value) setMobile("");
-                      }}
-                      className="input-field"
-                    />
+                  <div style={{
+                      display: "flex",
+                      gap: 12,
+                      alignItems: "center",
+                      flexWrap: "wrap"
+                    }}>
 
-                    <input
-                      type="text"
-                      placeholder="Mobile Number"
-                      value={mobile}
-                      onChange={(e) => {
-                        setMobile(e.target.value);
-                        if (e.target.value) setTripId("");
-                      }}
-                      className="input-field"
-                    />
+                      <input
+                        type="text"
+                        placeholder="Trip ID"
+                        value={tripId}
+                        onChange={(e) => {
+                          setTripId(e.target.value);
+                          if (e.target.value) setMobile("");
+                        }}
+                        className="input-field"
+                      />
+
+                      <input
+                        type="text"
+                        placeholder="Mobile Number"
+                        value={mobile}
+                        onChange={(e) => {
+                          setMobile(e.target.value);
+                          if (e.target.value) setTripId("");
+                        }}
+                        className="input-field"
+                      />
+
+                      {/* 🔥 YAHAN BUTTON ADD KAR */}
+                      <button
+                        onClick={fetchTrips}
+                        className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white"
+                      >
+                        Search
+                      </button>
+
+                    </div>
 
           {!hasFiltered && (
             <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 14, padding: "48px 32px", textAlign: "center" }}>
