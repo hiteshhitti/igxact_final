@@ -41,8 +41,26 @@ export default function TripsPage() {
   const [endDate, setEndDate]     = useState<Date | null>(null);
   const [loading, setLoading]     = useState(false);
   const [saving, setSaving]       = useState(false);
+  const [vehicles, setVehicles] = useState<string[]>([]);
+  const [vehicle, setVehicle] = useState("");
   const [tripId, setTripId] = useState("");
   const [mobile, setMobile] = useState("");
+
+
+  useEffect(() => {
+    const token = sessionStorage.getItem("token");
+
+    fetch(process.env.NEXT_PUBLIC_API_URL + "/vehicles", {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    })
+      .then(res => res.json())
+      .then(data => {
+        setVehicles(data.vehicles || []);
+      });
+  }, []);
+
 
   useEffect(() => {
     const t = sessionStorage.getItem("token");
@@ -250,14 +268,47 @@ const fetchTrips = async () => {
 
                 return (
                   <div key={col}>
-                    <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>{col}</label>
-                    <input
-                      className="input-field"
-                      type={isDate ? "date" : isNumber ? "number" : "text"}
-                      placeholder={col}
-                      value={form[col] || ""}
-                      onChange={(e) => setForm({ ...form, [col]: e.target.value })}
-                    />
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        color: "var(--text-muted)",
+                        letterSpacing: "0.06em",
+                        textTransform: "uppercase",
+                        marginBottom: 6,
+                      }}
+                    >
+                      {col}
+                    </label>
+
+                    {col === "Vehicle Details" ? (
+                      <select
+                        className="input-field"
+                        value={form[col] || ""}
+                        onChange={(e) =>
+                          setForm({ ...form, [col]: e.target.value })
+                        }
+                      >
+                        <option value="">Select Vehicle</option>
+
+                        {vehicles.map((v, i) => (
+                          <option key={i} value={v}>
+                            {v}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        className="input-field"
+                        type={isDate ? "date" : isNumber ? "number" : "text"}
+                        placeholder={col}
+                        value={form[col] || ""}
+                        onChange={(e) =>
+                          setForm({ ...form, [col]: e.target.value })
+                        }
+                      />
+                    )}
                   </div>
                 );
               })}

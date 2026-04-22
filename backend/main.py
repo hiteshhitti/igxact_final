@@ -137,7 +137,29 @@ def login(data: LoginRequest):
     finally:
         db.close()
 
+@app.post("/vehicles")
+def add_vehicle(vehicle: dict, user=Depends(verify_token)):
+    client = get_client()
+    if not client:
+        raise HTTPException(status_code=500, detail="Google client failed")
 
+    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=453831150#gid=453831150").worksheet("Vehicles")
+
+    name = vehicle.get("name", "").strip()
+
+    if not name:
+        raise HTTPException(status_code=400, detail="Vehicle name required")
+
+    # 🔥 duplicate check
+    existing = sheet.get_all_records()
+    existing_names = [row["Vehicle Name"].strip().lower() for row in existing]
+
+    if name.lower() in existing_names:
+        return {"msg": "Already exists"}
+
+    sheet.append_row([name])
+
+    return {"msg": "Vehicle added"}
 
 
 @app.post("/add-trip")
