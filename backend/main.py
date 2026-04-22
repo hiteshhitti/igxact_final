@@ -143,7 +143,7 @@ def add_vehicle(vehicle: dict, user=Depends(verify_token)):
     if not client:
         raise HTTPException(status_code=500, detail="Google client failed")
 
-    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=453831150#gid=453831150").worksheet("Vehicles")
+    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=453831150#gid=453831150").sheet2
 
     name = vehicle.get("name", "").strip()
 
