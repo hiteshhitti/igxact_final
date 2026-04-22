@@ -137,13 +137,36 @@ def login(data: LoginRequest):
     finally:
         db.close()
 
+@app.get("/vehicles")
+def get_vehicles(user=Depends(verify_token)):
+    client = get_client()
+    if not client:
+        raise HTTPException(status_code=500, detail="Google client failed")
+
+    sheet = client.open_by_url(
+        "https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=453831150#gid=453831150"
+    ).worksheet("Vehichles")
+
+    data = sheet.get_all_records()
+
+    vehicles = [
+        row["Vehicle Name"].strip()
+        for row in data
+        if row.get("Vehicle Name")
+    ]
+
+    return {"vehicles": vehicles}
+
+
+
+
 @app.post("/vehicles")
 def add_vehicle(vehicle: dict, user=Depends(verify_token)):
     client = get_client()
     if not client:
         raise HTTPException(status_code=500, detail="Google client failed")
 
-    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=453831150#gid=453831150").sheet2
+    sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=453831150#gid=453831150").worksheet("Vehichles")
 
     name = vehicle.get("name", "").strip()
 
