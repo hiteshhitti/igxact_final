@@ -217,8 +217,9 @@ def get_trips(
     df.columns = df.columns.str.strip()
 
 # 🔥 trip id ko safe numeric bana
+
     if "trip id" in df.columns:
-        df["trip id"] = pd.to_numeric(df["trip id"], errors="coerce").fillna(0).astype(int)
+        df["trip id"] = df["trip id"].fillna("").astype(str).str.strip()
 
     # ✅ DATE CLEAN
     df['Start Date'] = pd.to_datetime(df['Start Date'], errors='coerce')
@@ -227,7 +228,7 @@ def get_trips(
 
     if trip_id:
         # 🥇 Trip ID only
-        df = df[df["trip id"].astype(str) == str(trip_id)]
+        df = df[df["trip id"] == str(trip_id).strip()]
 
     else:
         # 🥈 Date filters
@@ -452,8 +453,11 @@ def get_data(year: int = Query(None),
         df['Status'] = df['Status'].astype(str).str.strip().str.lower()
 
         if trip_id:
-            # 🥇 Trip ID only
-            df = df[df["Trip ID"].astype(str) == str(trip_id)]
+            trip_id_str = str(trip_id).strip()
+            if "trip id" in df.columns:
+                df = df[df["trip id"] == trip_id_str]
+            else:
+                return {"trips": []}
 
         else:
             # 🥈 Mobile (optional)
