@@ -30,7 +30,8 @@ export default function LoginPage() {
       try { data = JSON.parse(text); } catch { data = null; }
 
       if (res.ok && data?.access_token) {
-        sessionStorage.setItem("token", data.access_token);
+        localStorage.setItem("token", data.access_token);
+        localStorage.setItem("role", data.role);
         window.location.href = "/";
       } else {
         setError(data?.detail || "Invalid credentials. Please try again.");

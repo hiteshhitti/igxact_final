@@ -2,7 +2,7 @@ from passlib.context import CryptContext
 from jose import jwt
 import os
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
-from fastapi import Depends
+from fastapi import Depends, HTTPException
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
@@ -20,3 +20,8 @@ def verify_password(plain, hashed):
 def verify_token(credentials: HTTPAuthorizationCredentials = Depends(security)):
     token = credentials.credentials
     return jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+
+def require_admin(user=Depends(verify_token)):
+    if user["role"] != "admin":
+        raise HTTPException(status_code=403, detail="Admin only")
+    return user

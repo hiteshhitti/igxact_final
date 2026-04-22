@@ -1,14 +1,23 @@
 "use client";
 
 import { useSmoothRouter } from "@/components/UseSmoothRouter";
+import { useEffect, useState } from "react";
+
 
 export default function Navbar() {
   const { push } = useSmoothRouter();
+  const [role, setRole] = useState<string | null>(null);
 
   const logout = () => {
-    sessionStorage.removeItem("token");
+    localStorage.removeItem("token");
+    localStorage.removeItem("role");
     window.location.href = "/login";
   };
+
+  useEffect(() => {
+    const storedRole = localStorage.getItem("role");
+    setRole(storedRole);
+  }, []);
 
   return (
     <div className="w-full flex justify-between items-center px-6 py-4 
@@ -30,9 +39,11 @@ export default function Navbar() {
           Monthly
         </button>
 
+        {role === "admin" && (
         <button onClick={() => push("/trips")}>
           Trips
         </button>
+        )}
 
         {/* 🔥 LOGOUT BUTTON */}
         <button

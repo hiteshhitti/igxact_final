@@ -17,7 +17,7 @@ import os
 from dotenv import load_dotenv
 import traceback
 from auth import router as auth_router
-from utils import verify_password, hash_password, verify_token
+from utils import verify_password, hash_password, verify_token, require_admin
 
 load_dotenv()
 
@@ -130,11 +130,15 @@ def login(data: LoginRequest):
         if not user or not verify_password(data.password, user.password):
             raise HTTPException(status_code=401, detail="Invalid credentials")
 
-        token = create_token({"sub": user.username})
+        token = create_token({
+            "sub": user.username,
+            "role":user.role
+            })
 
         return {
             "access_token": token,
-            "token_type": "bearer"
+            "token_type": "bearer",
+            "role": user.role
         }
     finally:
         db.close()
@@ -188,7 +192,7 @@ def add_vehicle(vehicle: dict, user=Depends(verify_token)):
 
 
 @app.post("/add-trip")
-def add_trip(data: dict, user=Depends(verify_token)):
+def add_trip(data: dict, user=Depends(require_admin)):
     client = get_client()
     if not client:
         raise HTTPException(status_code=500, detail="Google client failed")
@@ -248,7 +252,7 @@ def get_trips(
     end: str = Query(None),
     trip_id: str = Query(None),
     mobile: str = Query(None),
-    user=Depends(verify_token)
+    user=Depends(require_admin)
 ):
     try:
         client = get_client()
@@ -351,7 +355,7 @@ def get_trips(
         raise HTTPException(status_code=500, detail=str(e))
 
 @app.put("/update-trip/{trip_id}")
-def update_trip(trip_id: int, data: dict, user=Depends(verify_token)):
+def update_trip(trip_id: int, data: dict, user=Depends(require_admin)):
     client = get_client()
     if not client:
         raise HTTPException(status_code=500, detail="Google client failed")
