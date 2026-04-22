@@ -152,9 +152,9 @@ def get_vehicles(user=Depends(verify_token)):
     data = sheet.get_all_records()
 
     vehicles = [
-        row["Vehicle Name"].strip()
+        str(row["Vehicle Name"]).strip()          # ✅ convert to str first
         for row in data
-        if row.get("Vehicle Name")
+        if row.get("Vehicle Name") and str(row.get("Vehicle Name")).strip() != ""
     ]
 
     return {"vehicles": vehicles}
