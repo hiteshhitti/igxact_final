@@ -492,7 +492,8 @@ export default function Home() {
       left: 0,
       width: "100vw",
       height: "100vh",
-      background: "rgba(0,0,0,0.6)",
+      background: "rgba(0,0,0,0.4)",
+      backdropFilter: "blur(6px)",
       display: "flex",
       alignItems: "center",
       justifyContent: "center",
@@ -502,20 +503,69 @@ export default function Home() {
     <div
       onClick={(e) => e.stopPropagation()}
       style={{
-        background: "#111",
-        padding: 20,
-        borderRadius: 12,
+        background: "#ffffff",
+        color: "#111",
+        padding: 24,
+        borderRadius: 16,
         width: "90%",
-        maxWidth: 500,
+        maxWidth: 600,
+        boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
       }}
     >
-      <h2>Trip #{selectedTrip["trip id"]}</h2>
-      <p>{selectedTrip["Customer Name"]}</p>
-      <p>{selectedTrip["Cust. Contact Number"]}</p>
+      {/* HEADER */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+        <h2 style={{ fontSize: 20, fontWeight: 700 }}>
+          Trip #{selectedTrip["trip id"]}
+        </h2>
+        <button
+          onClick={() => setSelectedTrip(null)}
+          style={{
+            background: "#eee",
+            border: "none",
+            borderRadius: 8,
+            padding: "4px 10px",
+            cursor: "pointer"
+          }}
+        >
+          ✕
+        </button>
+      </div>
 
-      <button onClick={() => setSelectedTrip(null)}>
-        Close
-      </button>
+      {/* CUSTOMER INFO */}
+      <div style={{ marginBottom: 16 }}>
+        <p><strong>Customer:</strong> {selectedTrip["Customer Name"]}</p>
+        <p><strong>Mobile:</strong> {selectedTrip["Cust. Contact Number"]}</p>
+      </div>
+
+      {/* TRIP INFO */}
+      <div style={{ marginBottom: 16 }}>
+        <p><strong>Route:</strong> {selectedTrip["Trip From"]} → {selectedTrip["Trip TO"]}</p>
+        <p><strong>Dates:</strong> {selectedTrip["Start Date"]} → {selectedTrip["End date"]}</p>
+        <p><strong>Vehicle:</strong> {selectedTrip["Vehicle Details"]}</p>
+      </div>
+
+      {/* FINANCIAL */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 1fr",
+        gap: 12,
+        marginBottom: 16
+      }}>
+        <div style={{ background: "#f5f5f5", padding: 12, borderRadius: 10 }}>
+          <p style={{ fontSize: 12 }}>Deal Price</p>
+          <p style={{ fontWeight: 700 }}>₹{(selectedTrip["Deal Price"] || 0).toLocaleString("en-IN")}</p>
+        </div>
+
+        <div style={{ background: "#e6f9f0", padding: 12, borderRadius: 10 }}>
+          <p style={{ fontSize: 12 }}>Received</p>
+          <p style={{ fontWeight: 700, color: "green" }}>₹{(selectedTrip["Received"] || 0).toLocaleString("en-IN")}</p>
+        </div>
+      </div>
+
+      {/* EXTRA */}
+      <div>
+        <p><strong>Pending:</strong> ₹{(selectedTrip["Pending"] || 0).toLocaleString("en-IN")}</p>
+      </div>
     </div>
   </div>
 )}
