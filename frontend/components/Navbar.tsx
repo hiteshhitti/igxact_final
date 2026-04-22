@@ -9,13 +9,13 @@ export default function Navbar() {
   const [role, setRole] = useState<string | null>(null);
 
   const logout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("role");
+    sessionStorage.removeItem("token");
+    sessionStorage.removeItem("role");
     window.location.href = "/login";
   };
 
   useEffect(() => {
-    const storedRole = localStorage.getItem("role");
+    const storedRole = sessionStorage.getItem("role");
     setRole(storedRole);
   }, []);
 
