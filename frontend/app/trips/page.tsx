@@ -47,21 +47,7 @@ export default function TripsPage() {
   const [mobile, setMobile] = useState("");
 
 
-useEffect(() => {
-  if (!token) return;
 
-  fetch(process.env.NEXT_PUBLIC_API_URL + "/vehicles", {
-    method: "GET",
-    headers: { Authorization: `Bearer ${token}` },
-  })
-    .then(res => {
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);  // ✅ catch 401/500
-      return res.json();
-    })
-    .then(data => setVehicles(data.vehicles || []))
-    .catch(err => console.error("Vehicle fetch error:", err));
-
-}, [token]);
 
 
   useEffect(() => {
@@ -76,6 +62,23 @@ useEffect(() => {
       .then(res => res.json())
       .then(data => setColumns(Array.isArray(data) ? data : (data.columns || [])))
       .catch(() => setColumns([]));
+  }, [token]);
+
+
+  useEffect(() => {
+    if (!token) return;
+
+    fetch(process.env.NEXT_PUBLIC_API_URL + "/vehicles", {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then(res => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);  // ✅ catch 401/500
+        return res.json();
+      })
+      .then(data => setVehicles(data.vehicles || []))
+      .catch(err => console.error("Vehicle fetch error:", err));
+
   }, [token]);
 
 const fetchTrips = async () => {
