@@ -57,20 +57,20 @@ export default function LoginPage() {
       <div style={{
         position: "absolute", top: "20%", left: "30%",
         width: 400, height: 400, borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(79,142,247,0.08) 0%, transparent 70%)",
+        background: "radial-gradient(circle, rgba(37,99,235,0.10) 0%, transparent 70%)",
         pointerEvents: "none",
       }} />
       <div style={{
         position: "absolute", bottom: "20%", right: "25%",
         width: 300, height: 300, borderRadius: "50%",
-        background: "radial-gradient(circle, rgba(167,139,250,0.07) 0%, transparent 70%)",
+        background: "radial-gradient(circle, rgba(124,58,237,0.07) 0%, transparent 70%)",
         pointerEvents: "none",
       }} />
 
       {/* Grid texture */}
       <div style={{
         position: "absolute", inset: 0,
-        backgroundImage: "linear-gradient(rgba(255,255,255,0.015) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.015) 1px, transparent 1px)",
+        backgroundImage: "linear-gradient(rgba(0,0,0,0.04) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.04) 1px, transparent 1px)",
         backgroundSize: "40px 40px",
         pointerEvents: "none",
       }} />
@@ -80,11 +80,11 @@ export default function LoginPage() {
         width: "100%",
         maxWidth: 400,
         padding: "40px 36px",
-        background: "rgba(15, 22, 35, 0.9)",
+        background: "rgba(255, 255, 255, 0.95)",
         backdropFilter: "blur(24px)",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "1px solid rgba(0,0,0,0.08)",
         borderRadius: 24,
-        boxShadow: "0 32px 80px rgba(0,0,0,0.5), 0 0 0 1px rgba(79,142,247,0.05)",
+        boxShadow: "0 32px 80px rgba(0,0,0,0.12), 0 0 0 1px rgba(37,99,235,0.05)",
         position: "relative",
         zIndex: 1,
         animation: "pageEnter 0.5s cubic-bezier(0.4,0,0.2,1) forwards",
@@ -94,10 +94,10 @@ export default function LoginPage() {
         <div style={{ textAlign: "center", marginBottom: 32 }}>
           <div style={{
             width: 52, height: 52, borderRadius: 14,
-            background: "linear-gradient(135deg, #4f8ef7 0%, #a78bfa 100%)",
+            background: "linear-gradient(135deg, #2563eb 0%, #7c3aed 100%)",
             display: "flex", alignItems: "center", justifyContent: "center",
             margin: "0 auto 16px",
-            boxShadow: "0 8px 32px rgba(79,142,247,0.35)",
+            boxShadow: "0 8px 32px rgba(37,99,235,0.30)",
             fontSize: 22, fontWeight: 800,
             fontFamily: "var(--font-display)",
             color: "#fff",

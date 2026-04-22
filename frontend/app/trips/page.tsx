@@ -8,23 +8,23 @@ const datePickerStyles = `
   @keyframes spin { to { transform: rotate(360deg); } }
   .react-datepicker-wrapper { display: block; }
   .react-datepicker__input-container input {
-    background: rgba(255,255,255,0.03);
-    border: 1px solid rgba(255,255,255,0.10);
+    background: rgba(0,0,0,0.03);
+    border: 1px solid rgba(0,0,0,0.10);
     border-radius: 8px;
     padding: 9px 13px;
-    color: #f0f4ff;
+    color: #0f172a;
     font-family: var(--font-body);
     font-size: 14px;
     outline: none;
     min-width: 140px;
   }
-  .react-datepicker { background: #131a27; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; font-family: var(--font-body); color: #f0f4ff; }
-  .react-datepicker__header { background: #0f1623; border-bottom: 1px solid rgba(255,255,255,0.08); border-radius: 12px 12px 0 0; }
-  .react-datepicker__current-month, .react-datepicker__day-name { color: #94a3b8; }
-  .react-datepicker__day { color: #f0f4ff; }
-  .react-datepicker__day:hover { background: rgba(79,142,247,0.2); border-radius: 6px; }
-  .react-datepicker__day--selected { background: #4f8ef7; border-radius: 6px; }
-  .react-datepicker__navigation-icon::before { border-color: #94a3b8; }
+  .react-datepicker { background: #ffffff; border: 1px solid rgba(0,0,0,0.10); border-radius: 12px; font-family: var(--font-body); color: #0f172a; }
+  .react-datepicker__header { background: #f0f4fb; border-bottom: 1px solid rgba(0,0,0,0.08); border-radius: 12px 12px 0 0; }
+  .react-datepicker__current-month, .react-datepicker__day-name { color: #475569; }
+  .react-datepicker__day { color: #0f172a; }
+  .react-datepicker__day:hover { background: rgba(37,99,235,0.20); border-radius: 6px; }
+  .react-datepicker__day--selected { background: #2563eb; border-radius: 6px; }
+  .react-datepicker__navigation-icon::before { border-color: #475569; }
 `;
 
 const SKIP_COLS = new Set(["trip id","Profit Percentage","Net Profit (without Driver Salary)","Profit without commission"]);
@@ -172,7 +172,7 @@ export default function TripsPage() {
 
         {/* Form */}
         <section className="section">
-          <div style={{ background: "var(--bg-card)", border: `1px solid ${editingId ? "rgba(79,142,247,0.25)" : "var(--border-subtle)"}`, borderRadius: 20, padding: 28 }}>
+          <div style={{ background: "var(--bg-card)", border: `1px solid ${editingId ? "rgba(37,99,235,0.25)" : "var(--border-subtle)"}`, borderRadius: 20, padding: 28 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22 }}>
               <div>
                 <h2 className="section-title">{editingId ? `Editing Trip #${editingId}` : "New Trip"}</h2>
@@ -226,7 +226,7 @@ export default function TripsPage() {
 
             {/* Live calculations */}
             {deal > 0 && (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginTop: 22, padding: 18, background: "rgba(255,255,255,0.02)", borderRadius: 12, border: "1px solid var(--border-subtle)" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginTop: 22, padding: 18, background: "rgba(0,0,0,0.03)", borderRadius: 12, border: "1px solid var(--border-subtle)" }}>
                 <div>
                   <p style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Net Profit</p>
                   <p style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 800, color: netProfit >= 0 ? "var(--accent-green)" : "var(--accent-red)" }}>₹{netProfit.toLocaleString("en-IN")}</p>
@@ -249,7 +249,7 @@ export default function TripsPage() {
               style={{ marginTop: 20, padding: "11px 28px", opacity: saving ? 0.7 : 1 }}
             >
               {saving
-                ? <span style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", animation: "spin 0.7s linear infinite" }} /> Saving…</span>
+                ? <span style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid rgba(0,0,0,0.15)", borderTopColor: "var(--text-primary)", animation: "spin 0.7s linear infinite" }} /> Saving…</span>
                 : editingId ? "Update Trip" : "Add Trip"
               }
             </button>
@@ -269,7 +269,7 @@ export default function TripsPage() {
             <DatePicker selected={endDate}   onChange={(d: Date | null) => setEndDate(d)}   placeholderText="End date"   dateFormat="dd/MM/yyyy" />
             <button className="btn-primary"  style={{ padding: "8px 16px", fontSize: 13 }} onClick={fetchTrips}>Filter</button>
             <button className="btn-ghost"    style={{ padding: "8px 14px", fontSize: 13 }} onClick={() => { setStartDate(null); setEndDate(null); setTrips([]); setHasFiltered(false); }}>Reset</button>
-            {loading && <div style={{ width: 18, height: 18, borderRadius: "50%", border: "2px solid rgba(79,142,247,0.2)", borderTopColor: "var(--accent-primary)", animation: "spin 0.7s linear infinite" }} />}
+            {loading && <div style={{ width: 18, height: 18, borderRadius: "50%", border: "2px solid rgba(37,99,235,0.20)", borderTopColor: "var(--accent-primary)", animation: "spin 0.7s linear infinite" }} />}
           </div>
 
           {!hasFiltered && (
@@ -293,8 +293,8 @@ export default function TripsPage() {
                 const st = statusInfo[t.status] || { label: t.status, cls: "pill-blue" };
                 return (
                   <div key={t["trip id"]} style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 12, padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "border-color 0.2s ease" }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.10)")}
-                    onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(255,255,255,0.06)")}
+                    onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(0,0,0,0.10)")}
+                    onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(0,0,0,0.06)")}
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
                       <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600, minWidth: 50 }}>#{t["trip id"]}</span>

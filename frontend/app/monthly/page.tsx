@@ -10,10 +10,10 @@ import {
 
 const axisProps = { stroke: "#475569", fontSize: 12, fontFamily: "var(--font-body)" };
 const tooltipStyle = {
-  background: "rgba(13,17,23,0.95)",
-  border: "1px solid rgba(255,255,255,0.10)",
+  background: "rgba(255,255,255,0.97)",
+  border: "1px solid rgba(0,0,0,0.10)",
   borderRadius: 14,
-  boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+  boxShadow: "0 8px 32px rgba(0,0,0,0.10)",
   fontFamily: "var(--font-body)",
   fontSize: 13,
 };
@@ -93,10 +93,10 @@ export default function MonthlyPage() {
               Clear
             </button>
             {loading && (
-              <div style={{ width: 18, height: 18, borderRadius: "50%", border: "2px solid rgba(79,142,247,0.2)", borderTopColor: "var(--accent-primary)", animation: "spin 0.7s linear infinite" }} />
+              <div style={{ width: 18, height: 18, borderRadius: "50%", border: "2px solid rgba(37,99,235,0.20)", borderTopColor: "var(--accent-primary)", animation: "spin 0.7s linear infinite" }} />
             )}
           </div>
-          <style>{`@keyframes spin { to { transform: rotate(360deg); } } .date-picker-wrapper { display: block; } .react-datepicker-wrapper { display: block; } .react-datepicker__input-container input { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.10); border-radius: 8px; padding: 9px 13px; color: #f0f4ff; font-family: var(--font-body); font-size: 14px; outline: none; min-width: 150px; } .react-datepicker { background: #131a27; border: 1px solid rgba(255,255,255,0.1); border-radius: 12px; font-family: var(--font-body); color: #f0f4ff; } .react-datepicker__header { background: #0f1623; border-bottom: 1px solid rgba(255,255,255,0.08); border-radius: 12px 12px 0 0; } .react-datepicker__current-month, .react-datepicker__day-name { color: #94a3b8; } .react-datepicker__day { color: #f0f4ff; } .react-datepicker__day:hover { background: rgba(79,142,247,0.2); border-radius: 6px; } .react-datepicker__day--selected { background: #4f8ef7; border-radius: 6px; } .react-datepicker__navigation-icon::before { border-color: #94a3b8; }`}</style>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } } .date-picker-wrapper { display: block; } .react-datepicker-wrapper { display: block; } .react-datepicker__input-container input { background: #ffffff; border: 1px solid rgba(0,0,0,0.10); border-radius: 8px; padding: 9px 13px; color: #0f172a; font-family: var(--font-body); font-size: 14px; outline: none; min-width: 150px; } .react-datepicker { background: #ffffff; border: 1px solid rgba(0,0,0,0.10); border-radius: 12px; font-family: var(--font-body); color: #0f172a; } .react-datepicker__header { background: #f0f4fb; border-bottom: 1px solid rgba(0,0,0,0.08); border-radius: 12px 12px 0 0; } .react-datepicker__current-month, .react-datepicker__day-name { color: #475569; } .react-datepicker__day { color: #0f172a; } .react-datepicker__day:hover { background: rgba(37,99,235,0.20); border-radius: 6px; } .react-datepicker__day--selected { background: #2563eb; border-radius: 6px; } .react-datepicker__navigation-icon::before { border-color: #475569; }`}</style>
         </section>
 
         {/* Status cards */}
@@ -132,7 +132,7 @@ export default function MonthlyPage() {
             </div>
 
             {/* Booked */}
-            <div className="kpi-card" style={{ borderColor: "rgba(79,142,247,0.18)" }}>
+            <div className="kpi-card" style={{ borderColor: "rgba(37,99,235,0.18)" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 12 }}>
                 <p style={{ fontSize: 11, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em" }}>Booked</p>
                 <span className="pill pill-blue" style={{ fontSize: 10 }}>{booked.trips ?? 0} trips</span>
@@ -168,7 +168,7 @@ export default function MonthlyPage() {
                   <YAxis {...axisProps} />
                   <Tooltip contentStyle={tooltipStyle} />
                   <Legend wrapperStyle={{ fontFamily: "var(--font-body)", fontSize: 12, color: "var(--text-secondary)", paddingTop: 8 }} />
-                  <Bar dataKey="Deal Price" fill="#4f8ef7" radius={[4,4,0,0]} />
+                  <Bar dataKey="Deal Price" fill="#2563eb" radius={[4,4,0,0]} />
                   <Bar dataKey="Net Profit (without Driver Salary)" name="Net Profit" fill="#22d3a0" radius={[4,4,0,0]} />
                 </BarChart>
               </ResponsiveContainer>

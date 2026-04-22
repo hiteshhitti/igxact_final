@@ -14,10 +14,10 @@ const PAYMENT_COLORS = ['#f97316', '#4f8ef7'];
 
 
 const tooltipStyle = {
-  background: "rgba(13,17,23,0.95)",
-  border: "1px solid rgba(255,255,255,0.10)",
+  background: "rgba(255,255,255,0.97)",
+  border: "1px solid rgba(0,0,0,0.10)",
   borderRadius: 14,
-  boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+  boxShadow: "0 8px 32px rgba(0,0,0,0.10)",
   backdropFilter: "blur(12px)",
   fontFamily: "var(--font-body)",
   fontSize: 13,
@@ -44,7 +44,7 @@ const TripCard = ({ trip }: any) => {
         </span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
-        <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 8, padding: "8px 10px" }}>
+        <div style={{ background: "rgba(0,0,0,0.03)", borderRadius: 8, padding: "8px 10px" }}>
           <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 2 }}>Deal</p>
           <p style={{ fontSize: 15, fontWeight: 700, color: "var(--text-primary)" }}>₹{(trip["Deal Price"] || 0).toLocaleString("en-IN")}</p>
         </div>
@@ -439,7 +439,7 @@ export default function Home() {
             <h2 className="section-title">Key Insights</h2>
             <p className="section-subtitle">AI-powered summary of your business performance</p>
           </div>
-          <div style={{ background: "linear-gradient(135deg, rgba(79,142,247,0.08) 0%, rgba(167,139,250,0.06) 100%)", border: "1px solid rgba(79,142,247,0.15)", borderRadius: 20, padding: 24 }}>
+          <div style={{ background: "linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(124,58,237,0.06) 100%)", border: "1px solid rgba(37,99,235,0.12)", borderRadius: 20, padding: 24 }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
               {[
                 { label: "Best Month",        value: insights.best_month },
@@ -450,7 +450,7 @@ export default function Home() {
                 { label: "Fuel Cost %",       value: `${insights.fuel_pct}%` },
                 { label: "Digital Payments %",value: `${insights.digital_pct}%` },
               ].map((item, i) => (
-                <div key={i} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "14px 16px" }}>
+                <div key={i} style={{ background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 12, padding: "14px 16px" }}>
                   <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 600 }}>{item.label}</p>
                   <p style={{ fontFamily: "var(--font-display)", fontSize: 16, fontWeight: 700, color: "var(--text-primary)" }}>{item.value || "—"}</p>
                 </div>

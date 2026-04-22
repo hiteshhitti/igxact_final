@@ -12,10 +12,10 @@ const COLORS = ['#4f8ef7', '#22d3a0', '#a78bfa', '#f97316', '#f87171'];
 
 const axisProps = { stroke: "#475569", fontSize: 12, fontFamily: "var(--font-body)" };
 const tooltipStyle = {
-  background: "rgba(13,17,23,0.95)",
-  border: "1px solid rgba(255,255,255,0.10)",
+  background: "rgba(255,255,255,0.97)",
+  border: "1px solid rgba(0,0,0,0.10)",
   borderRadius: 14,
-  boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+  boxShadow: "0 8px 32px rgba(0,0,0,0.10)",
   fontFamily: "var(--font-body)",
   fontSize: 13,
 };
@@ -80,7 +80,7 @@ export default function InsightsPage() {
 
         {!data ? (
           <div style={{ display: "flex", alignItems: "center", justifyContent: "center", minHeight: 300, flexDirection: "column", gap: 14 }}>
-            <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid rgba(79,142,247,0.15)", borderTopColor: "var(--accent-primary)", animation: "spin 0.7s linear infinite" }} />
+            <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid rgba(37,99,235,0.12)", borderTopColor: "var(--accent-primary)", animation: "spin 0.7s linear infinite" }} />
             <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Loading insights…</p>
             <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
           </div>
@@ -88,11 +88,11 @@ export default function InsightsPage() {
           <>
             {/* Summary cards */}
             <section className="section">
-              <div style={{ background: "linear-gradient(135deg, rgba(79,142,247,0.08) 0%, rgba(167,139,250,0.06) 100%)", border: "1px solid rgba(79,142,247,0.15)", borderRadius: 20, padding: 24, marginBottom: 32 }}>
+              <div style={{ background: "linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(124,58,237,0.06) 100%)", border: "1px solid rgba(37,99,235,0.12)", borderRadius: 20, padding: 24, marginBottom: 32 }}>
                 <h2 className="section-title" style={{ marginBottom: 18 }}>Summary</h2>
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 12 }}>
                   {insightItems.map((item, i) => (
-                    <div key={i} style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 12, padding: "14px 16px" }}>
+                    <div key={i} style={{ background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 12, padding: "14px 16px" }}>
                       <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 600 }}>{item.label}</p>
                       <p style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 700, color: "var(--text-primary)" }}>{item.value ?? "—"}</p>
                     </div>
