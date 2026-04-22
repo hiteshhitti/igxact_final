@@ -25,13 +25,13 @@ const tooltipStyle = {
 
 const axisProps = { stroke: "#475569", fontSize: 12, fontFamily: "var(--font-body)" };
 
-const TripCard = ({ trip }: any) => {
+const TripCard = ({ trip, onClick }: any) => {
   const pending = trip["Pending"];
   const pct = trip["Deal Price"] ? Math.round((trip["Received"] / trip["Deal Price"]) * 100) : 0;
   return (
     <div 
       className="trip-card"
-      onClick={() => window.open(`/trip/${trip["trip id"]}`, "_blank")}
+      onClick={onClick}
       style={{ cursor: "pointer" }}
     >
       <div style={{ marginBottom: 8 }}>
@@ -88,6 +88,7 @@ export default function Home() {
   const [year, setYear] = useState<number | null>(null);
   const [years, setYears] = useState<number[]>([]);
   const [data, setData] = useState<any>(null);
+  const [selectedTrip, setSelectedTrip] = useState<any>(null);
   const { push } = useSmoothRouter();
   const router = useRouter();
 
@@ -121,6 +122,7 @@ export default function Home() {
           <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Loading your dashboard…</p>
           <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
         </div>
+  
       </div>
     );
   }
@@ -237,7 +239,11 @@ export default function Home() {
           {progressTrips.length === 0
             ? <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 14, padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>No active trips</div>
             : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14, maxHeight: 420, overflowY: "auto", paddingRight: 4 }}>
-                {progressTrips.map((trip: any, i: number) => <TripCard key={i} trip={trip} />)}
+                {progressTrips.map((trip: any, i: number) => <TripCard
+                                                                    key={i}
+                                                                    trip={trip}
+                                                                    onClick={() => setSelectedTrip(trip)}
+                                                                  />)}
               </div>
           }
         </section>
@@ -257,7 +263,10 @@ export default function Home() {
           {bookedTrips.length === 0
             ? <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 14, padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>No booked trips</div>
             : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14, maxHeight: 420, overflowY: "auto", paddingRight: 4 }}>
-                {bookedTrips.map((trip: any, i: number) => <TripCard key={i} trip={trip} />)}
+                {bookedTrips.map((trip: any, i: number) => <TripCard key={i} 
+                                                                      trip={trip}
+                                                                      onClick={() => setSelectedTrip(trip)}
+                />)}
               </div>
           }
         </section>
@@ -473,6 +482,43 @@ export default function Home() {
         </section>
 
       </div>
+
+            {selectedTrip && (
+  <div
+    onClick={() => setSelectedTrip(null)}
+    style={{
+      position: "fixed",
+      top: 0,
+      left: 0,
+      width: "100vw",
+      height: "100vh",
+      background: "rgba(0,0,0,0.6)",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      zIndex: 999,
+    }}
+  >
+    <div
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        background: "#111",
+        padding: 20,
+        borderRadius: 12,
+        width: "90%",
+        maxWidth: 500,
+      }}
+    >
+      <h2>Trip #{selectedTrip["trip id"]}</h2>
+      <p>{selectedTrip["Customer Name"]}</p>
+      <p>{selectedTrip["Cust. Contact Number"]}</p>
+
+      <button onClick={() => setSelectedTrip(null)}>
+        Close
+      </button>
+    </div>
+  </div>
+)}
     </div>
   );
 }
