@@ -361,7 +361,9 @@ def build_pipeline(df_src):
     df_src['Pending'] = df_src['Deal Price'] - df_src['Received']
 
     return df_src[[
+        'trip id',
         'Customer Name',
+        'Cust. Contact Number',
         'Trip From',
         'Trip TO',
         'Start Date',

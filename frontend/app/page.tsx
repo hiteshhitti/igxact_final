@@ -29,7 +29,20 @@ const TripCard = ({ trip }: any) => {
   const pending = trip["Pending"];
   const pct = trip["Deal Price"] ? Math.round((trip["Received"] / trip["Deal Price"]) * 100) : 0;
   return (
-    <div className="trip-card">
+    <div 
+      className="trip-card"
+      onClick={() => window.open(`/trip/${trip["trip id"]}`, "_blank")}
+      style={{ cursor: "pointer" }}
+    >
+      <div style={{ marginBottom: 8 }}>
+        <p style={{ fontSize: 13, fontWeight: 600 }}>
+          #{trip["trip id"]} • {trip["Customer Name"]}
+        </p>
+
+        <p style={{ fontSize: 11, color: "var(--text-muted)" }}>
+          📞 {trip["Cust. Contact Number"]}
+        </p>
+      </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
         <div>
           <p style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 15, color: "var(--text-primary)" }}>
