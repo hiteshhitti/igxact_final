@@ -589,25 +589,47 @@ def get_data(year: int = Query(None),
         if month:
             df = df[df['MonthNum'] == month]
 
-        if df.empty:
-            return {
-                "success": True,
-                "years": years,
-                "monthly": [],
-                "kpi": {
-                    "total_revenue": 0,
-                    "total_profit": 0,
-                    "avg_margin": 0,
-                    "avg_deal": 0,
-                    "avg_days": 0,
-                    "cash_total": 0,
-                    "bank_total": 0,
-                },
-                "growth": {
-                    "revenue_change": 0,
-                    "profit_change": 0
-                }
-            }
+    if df.empty:
+        return {
+            "success": True,
+            "years": years,
+            "month_targets": [],
+
+            "kpi": {
+                "total_revenue": 0,
+                "total_profit": 0,
+                "avg_margin": 0,
+                "avg_deal": 0,
+                "avg_days": 0,
+                "cash_total": 0,
+                "bank_total": 0,
+            },
+
+            # 🔥 IMPORTANT
+            "pipeline": {
+                "progress": [],
+                "booked": []
+            },
+
+            "pipeline_summary": {
+                "progress_total": 0,
+                "progress_received": 0,
+                "booked_total": 0,
+                "booked_received": 0
+            },
+
+            "monthly": [],
+            "vehicle": [],
+            "top_customers": [],
+            "routes": [],
+            "cost_breakdown": [],
+            "monthly_cost": [],
+            "duration_dist": [],
+            "day_of_week": [],
+            "monthly_payment": [],
+            "insights": {},
+            "extra_insights": {}
+        }
 
         # 🚛 Route
         df['Route'] = df['Trip From'].astype(str).str.strip() + ' → ' + df['Trip TO'].astype(str).str.strip()
