@@ -214,6 +214,12 @@ def get_trips(
     data = sheet.get_all_records()
     df = pd.DataFrame(data)
 
+    df.columns = df.columns.str.strip()
+
+# 🔥 trip id ko safe numeric bana
+    if "trip id" in df.columns:
+        df["trip id"] = pd.to_numeric(df["trip id"], errors="coerce").fillna(0).astype(int)
+
     # ✅ DATE CLEAN
     df['Start Date'] = pd.to_datetime(df['Start Date'], errors='coerce')
 
