@@ -52,19 +52,14 @@ useEffect(() => {
 
   fetch(process.env.NEXT_PUBLIC_API_URL + "/vehicles", {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
+    headers: { Authorization: `Bearer ${token}` },
   })
-    .then(res => res.json())
-    .then(data => {
-      console.log("VEHICLES:", data); // 🔥 debug
-      setVehicles(data.vehicles || []);
+    .then(res => {
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);  // ✅ catch 401/500
+      return res.json();
     })
-    .catch(err => {
-      console.error("Vehicle fetch error:", err);
-    });
+    .then(data => setVehicles(data.vehicles || []))
+    .catch(err => console.error("Vehicle fetch error:", err));
 
 }, [token]);
 

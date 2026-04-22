@@ -23,6 +23,14 @@ load_dotenv()
 
 app = FastAPI()
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["https://igxactpixel.vercel.app"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 app.include_router(auth_router)
 
 security = HTTPBearer()
@@ -72,13 +80,7 @@ def create_token(data: dict):
     return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
 
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["https://igxactpixel.vercel.app"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
+
 
 scope = [
     "https://www.googleapis.com/auth/spreadsheets",
