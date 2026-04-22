@@ -47,19 +47,26 @@ export default function TripsPage() {
   const [mobile, setMobile] = useState("");
 
 
-  useEffect(() => {
-    const token = sessionStorage.getItem("token");
+useEffect(() => {
+  if (!token) return;
 
-    fetch(process.env.NEXT_PUBLIC_API_URL + "/vehicles", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+  fetch(process.env.NEXT_PUBLIC_API_URL + "/vehicles", {
+    method: "GET",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+    },
+  })
+    .then(res => res.json())
+    .then(data => {
+      console.log("VEHICLES:", data); // 🔥 debug
+      setVehicles(data.vehicles || []);
     })
-      .then(res => res.json())
-      .then(data => {
-        setVehicles(data.vehicles || []);
-      });
-  }, []);
+    .catch(err => {
+      console.error("Vehicle fetch error:", err);
+    });
+
+}, [token]);
 
 
   useEffect(() => {
