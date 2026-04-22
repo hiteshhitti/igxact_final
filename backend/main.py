@@ -246,13 +246,12 @@ def get_columns(user=Depends(verify_token)):
         raise HTTPException(status_code=500, detail="Columns fetch failed")
 
 
-@app.get("/trips")
-def get_trips(
+
+def get_trips_data(
     start: str = Query(None),
     end: str = Query(None),
     trip_id: str = Query(None),
     mobile: str = Query(None),
-    user=Depends(require_admin)
 ):
     try:
         client = get_client()
@@ -353,6 +352,30 @@ def get_trips(
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+    
+
+@app.get("/trips")
+def get_trips(
+    start: str = Query(None),
+    end: str = Query(None),
+    trip_id: str = Query(None),
+    mobile: str = Query(None),
+    user=Depends(require_admin)
+):
+    return get_trips_data(start, end, trip_id, mobile)
+
+
+@app.get("/trips-view")
+def trips_view(
+    start: str = Query(None),
+    end: str = Query(None),
+    trip_id: str = Query(None),
+    mobile: str = Query(None),
+    user=Depends(verify_token)
+):
+    return get_trips_data(start, end, trip_id, mobile)
+
+
 
 @app.put("/update-trip/{trip_id}")
 def update_trip(trip_id: int, data: dict, user=Depends(require_admin)):

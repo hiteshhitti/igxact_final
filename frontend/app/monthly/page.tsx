@@ -24,20 +24,29 @@ export default function MonthlyPage() {
   const [toDate, setToDate]     = useState<Date | null>(null);
   const [loading, setLoading]   = useState(false);
 
-  useEffect(() => {
-    const token = sessionStorage.getItem("token");
-    if (!token) { window.location.href = "/login"; return; }
+useEffect(() => {
+  const token = sessionStorage.getItem("token");
+  const role = sessionStorage.getItem("role");
 
-    setLoading(true);
-    let url = process.env.NEXT_PUBLIC_API_URL + "/trips";
-    if (fromDate) url += `?start=${fromDate.toISOString().split("T")[0]}`;
-    if (toDate)   url += `${fromDate ? "&" : "?"}end=${toDate.toISOString().split("T")[0]}`;
+  if (!token) { 
+    window.location.href = "/login"; 
+    return; 
+  }
 
-    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-      .then(res => res.json())
-      .then(res => { setData(res); setLoading(false); })
-      .catch(() => setLoading(false));
-  }, [fromDate, toDate]);
+  setLoading(true);
+
+  let endpoint = role === "admin" ? "/trips" : "/trips-view";
+  let url = process.env.NEXT_PUBLIC_API_URL + endpoint;
+
+  if (fromDate) url += `?start=${fromDate.toISOString().split("T")[0]}`;
+  if (toDate)   url += `${fromDate ? "&" : "?"}end=${toDate.toISOString().split("T")[0]}`;
+
+  fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+    .then(res => res.json())
+    .then(res => { setData(res); setLoading(false); })
+    .catch(() => setLoading(false));
+
+}, [fromDate, toDate]);
 
   const finalData = data?.trips || [];
   const formattedData = finalData.map((item: any) => ({
