@@ -503,12 +503,14 @@ export default function Home() {
     <div
       onClick={(e) => e.stopPropagation()}
       style={{
-        background: "#ffffff",
+        background: "#fff",
         color: "#111",
         padding: 24,
         borderRadius: 16,
-        width: "90%",
-        maxWidth: 600,
+        width: "95%",
+        maxWidth: 700,
+        maxHeight: "90vh",
+        overflowY: "auto",
         boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
       }}
     >
@@ -517,54 +519,47 @@ export default function Home() {
         <h2 style={{ fontSize: 20, fontWeight: 700 }}>
           Trip #{selectedTrip["trip id"]}
         </h2>
-        <button
-          onClick={() => setSelectedTrip(null)}
-          style={{
-            background: "#eee",
-            border: "none",
-            borderRadius: 8,
-            padding: "4px 10px",
-            cursor: "pointer"
-          }}
-        >
-          ✕
-        </button>
+        <button onClick={() => setSelectedTrip(null)}>✕</button>
       </div>
 
-      {/* CUSTOMER INFO */}
+      {/* CUSTOMER */}
       <div style={{ marginBottom: 16 }}>
-        <p><strong>Customer:</strong> {selectedTrip["Customer Name"]}</p>
-        <p><strong>Mobile:</strong> {selectedTrip["Cust. Contact Number"]}</p>
+        <h3 style={{ fontSize: 14, fontWeight: 600 }}>Customer</h3>
+        <p>{selectedTrip["Customer Name"]}</p>
+        <p>{selectedTrip["Cust. Contact Number"]}</p>
       </div>
 
-      {/* TRIP INFO */}
+      {/* TRIP */}
       <div style={{ marginBottom: 16 }}>
-        <p><strong>Route:</strong> {selectedTrip["Trip From"]} → {selectedTrip["Trip TO"]}</p>
-        <p><strong>Dates:</strong> {selectedTrip["Start Date"]} → {selectedTrip["End date"]}</p>
-        <p><strong>Vehicle:</strong> {selectedTrip["Vehicle Details"]}</p>
+        <h3 style={{ fontSize: 14, fontWeight: 600 }}>Trip Details</h3>
+        <p>{selectedTrip["Trip From"]} → {selectedTrip["Trip TO"]}</p>
+        <p>{selectedTrip["Start Date"]} → {selectedTrip["End date"]}</p>
+        <p>{selectedTrip["Vehicle Details"]}</p>
       </div>
 
       {/* FINANCIAL */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 1fr",
-        gap: 12,
-        marginBottom: 16
-      }}>
-        <div style={{ background: "#f5f5f5", padding: 12, borderRadius: 10 }}>
-          <p style={{ fontSize: 12 }}>Deal Price</p>
-          <p style={{ fontWeight: 700 }}>₹{(selectedTrip["Deal Price"] || 0).toLocaleString("en-IN")}</p>
-        </div>
-
-        <div style={{ background: "#e6f9f0", padding: 12, borderRadius: 10 }}>
-          <p style={{ fontSize: 12 }}>Received</p>
-          <p style={{ fontWeight: 700, color: "green" }}>₹{(selectedTrip["Received"] || 0).toLocaleString("en-IN")}</p>
-        </div>
+      <div style={{ marginBottom: 16 }}>
+        <h3 style={{ fontSize: 14, fontWeight: 600 }}>Financial</h3>
+        <p>Deal: ₹{(selectedTrip["Deal Price"] || 0).toLocaleString("en-IN")}</p>
+        <p>Received: ₹{(selectedTrip["Received"] || 0).toLocaleString("en-IN")}</p>
+        <p>Pending: ₹{(selectedTrip["Pending"] || 0).toLocaleString("en-IN")}</p>
       </div>
 
-      {/* EXTRA */}
+      {/* 🔥 COST BREAKDOWN */}
       <div>
-        <p><strong>Pending:</strong> ₹{(selectedTrip["Pending"] || 0).toLocaleString("en-IN")}</p>
+        <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Cost Breakdown</h3>
+
+        <div style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr",
+          gap: 10
+        }}>
+          <div>Fuel: ₹{(selectedTrip["Fuel"] || 0).toLocaleString("en-IN")}</div>
+          <div>Tolls & Taxes: ₹{(selectedTrip["Tolls & Taxes"] || 0).toLocaleString("en-IN")}</div>
+          <div>Parking: ₹{(selectedTrip["Parking"] || 0).toLocaleString("en-IN")}</div>
+          <div>Driver Allowance: ₹{(selectedTrip["Driver Allowance"] || 0).toLocaleString("en-IN")}</div>
+          <div>Sales Commission: ₹{(selectedTrip["Sales Commission"] || 0).toLocaleString("en-IN")}</div>
+        </div>
       </div>
     </div>
   </div>
