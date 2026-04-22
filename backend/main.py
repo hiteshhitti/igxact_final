@@ -74,7 +74,7 @@ def create_token(data: dict):
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["https://igxactpixel.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
