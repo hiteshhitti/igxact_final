@@ -203,46 +203,84 @@ def get_trips(
     mobile: str = Query(None),
     user=Depends(verify_token)
 ):
-    client = get_client()
-    if not client:
-        raise HTTPException(status_code=500, detail="Google client failed")
+    try:
+        client = get_client()
+        if not client:
+            raise HTTPException(status_code=500, detail="Google client failed")
 
-    sheet = client.open_by_url(
-        "https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0"
-    ).sheet1
+        sheet = client.open_by_url(
+            "https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0"
+        ).sheet1
 
-    data = sheet.get_all_records()
-    df = pd.DataFrame(data)
+        data = sheet.get_all_records()
+        df = pd.DataFrame(data)
 
-    df.columns = df.columns.str.strip()
+        # 🔥 SAFE COLUMN CLEAN
+        df.columns = df.columns.str.strip()
 
-# 🔥 trip id ko safe numeric bana
+        print("COLUMNS:", df.columns.tolist())
+        print("TRIP_ID:", trip_id)
 
-    if "trip id" in df.columns:
-        df["trip id"] = df["trip id"].fillna("").astype(str).str.strip()
+        # 🔥 SAFE TRIP ID
+        if "trip id" in df.columns:
+            df["trip id"] = df["trip id"].fillna("").astype(str).str.strip()
 
-    # ✅ DATE CLEAN
-    df['Start Date'] = pd.to_datetime(df['Start Date'], errors='coerce')
+        # 🔥 SAFE DATE
+        if "Start Date" in df.columns:
+            df["Start Date"] = pd.to_datetime(df["Start Date"], errors="coerce")
 
-    # 🔥 PRIORITY FILTER SYSTEM
+        # 🔥 SAFE MOBILE
+        if "Cust. Contact Number" in df.columns:
+            df["Cust. Contact Number"] = df["Cust. Contact Number"].fillna("").astype(str).str.replace(" ", "")
 
-    if trip_id:
-        # 🥇 Trip ID only
-        df = df[df["trip id"] == str(trip_id).strip()]
+        # 🔥 FILTER SYSTEM
+        if trip_id:
+            trip_id_str = str(trip_id).strip()
 
-    else:
-        # 🥈 Date filters
-        if start:
-            df = df[df['Start Date'] >= pd.to_datetime(start)]
+            if "trip id" in df.columns:
+                df = df[df["trip id"] == trip_id_str]
+            else:
+                return {"trips": []}
 
-        if end:
-            df = df[df['Start Date'] <= pd.to_datetime(end)]
+        else:
+            if start and "Start Date" in df.columns:
+                df = df[df["Start Date"] >= pd.to_datetime(start)]
 
-        # 🥉 Mobile filter (date ke saath combine)
-        if mobile:
-            df["Cust. Contact Number"] = df["Cust. Contact Number"].astype(str).str.replace(" ", "")
-            mobile_clean = mobile.replace(" ", "")
-            df = df[df["Cust. Contact Number"].str.contains(mobile_clean)]
+            if end and "Start Date" in df.columns:
+                df = df[df["Start Date"] <= pd.to_datetime(end)]
+
+            if mobile and "Cust. Contact Number" in df.columns:
+                mobile_clean = mobile.replace(" ", "")
+                df = df[df["Cust. Contact Number"].str.contains(mobile_clean)]
+
+        # 🔥 SAFE NUMERIC CLEAN
+        def clean(col):
+            if col not in df.columns:
+                return 0
+            return pd.to_numeric(
+                df[col].astype(str).str.replace(",", ""),
+                errors="coerce"
+            ).fillna(0)
+
+        df["Deal Price"] = clean("Deal Price")
+        df["AdvanceCash"] = clean("Booking Amt/Advance Cash")
+        df["AdvanceBank"] = clean("Booking Amt/Advance Bank")
+
+        df["Received"] = df["AdvanceCash"] + df["AdvanceBank"]
+        df["Pending"] = df["Deal Price"] - df["Received"]
+
+        # 🔥 SAFE STATUS
+        if "Status" in df.columns:
+            df["Status"] = df["Status"].astype(str).str.strip().str.lower()
+
+        return {
+            "trips": df.fillna("").to_dict(orient="records")
+        }
+
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=str(e))
 
     # ✅ CLEAN NUMBERS
     def clean(col):
