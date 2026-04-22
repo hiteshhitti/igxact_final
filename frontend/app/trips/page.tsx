@@ -4,6 +4,7 @@ import Navbar from "@/components/Navbar";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
+
 const datePickerStyles = `
   @keyframes spin { to { transform: rotate(360deg); } }
   .react-datepicker-wrapper { display: block; }
@@ -45,8 +46,37 @@ export default function TripsPage() {
   const [vehicle, setVehicle] = useState("");
   const [tripId, setTripId] = useState("");
   const [mobile, setMobile] = useState("");
+  const [role, setRole] = useState<string | null>(null);
 
 
+  useEffect(() => {
+    const storedRole = sessionStorage.getItem("role");
+        setRole(storedRole?.trim().toLowerCase() || null);
+      }, []);
+
+      // ⏳ jab tak role load nahi hota
+      if (role === null) {
+        return null; // ya loader dikha sakta hai
+      }
+
+      // ❌ user ke liye block
+      if (role !== "admin") {
+        return (
+          <div
+            style={{
+              minHeight: "80vh",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: "20px",
+              fontWeight: "600",
+              color: "red",
+            }}
+          >
+            🚫 Access Denied
+          </div>
+        );
+      }
 
 
 
