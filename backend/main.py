@@ -265,92 +265,114 @@ def get_trips_data(
         data = sheet.get_all_records()
         df = pd.DataFrame(data)
 
-        # 🔥 SAFE COLUMN CLEAN
-        df.columns = df.columns.str.strip()
+        # 🔥 FULL COLUMN CLEAN (IMPORTANT)
+        df.columns = (
+            df.columns
+            .str.strip()
+            .str.replace('\n', ' ')
+            .str.replace('\r', ' ')
+            .str.replace(r'\s+', ' ', regex=True)
+        )
 
         print("COLUMNS:", df.columns.tolist())
-        print("TRIP_ID:", trip_id)
 
-        # 🔥 SAFE TRIP ID
+        # 🔥 TRIP ID CLEAN
         if "trip id" in df.columns:
-            df["trip id"] = df["trip id"].fillna("").astype(str).str.strip()
+            df["trip id"] = df["trip id"].astype(str).str.strip()
 
-        # 🔥 SAFE DATE
+        # 🔥 DATE CLEAN
         if "Start Date" in df.columns:
-            df["Start Date"] = pd.to_datetime(df["Start Date"], errors="coerce")
+            df["Start Date"] = pd.to_datetime(
+                df["Start Date"],
+                format="%m/%d/%Y",
+                errors="coerce"
+            )
+            df = df[df["Start Date"].notna()]   # ❗ important
 
-        # 🔥 SAFE MOBILE
+        # 🔥 MOBILE CLEAN
         if "Cust. Contact Number" in df.columns:
-            df["Cust. Contact Number"] = df["Cust. Contact Number"].fillna("").astype(str).str.replace(" ", "")
+            df["Cust. Contact Number"] = (
+                df["Cust. Contact Number"]
+                .astype(str)
+                .str.replace(" ", "")
+            )
 
-        # 🔥 FILTER SYSTEM
+        # 🔥 FILTERS
         if trip_id:
             trip_id_str = str(trip_id).strip()
-
-            if "trip id" in df.columns:
-                df = df[df["trip id"] == trip_id_str]
-            else:
-                return {"trips": []}
+            df = df[df["trip id"] == trip_id_str]
 
         else:
-            if start and "Start Date" in df.columns:
+            if start:
                 df = df[df["Start Date"] >= pd.to_datetime(start)]
 
-            if end and "Start Date" in df.columns:
+            if end:
                 df = df[df["Start Date"] <= pd.to_datetime(end)]
 
-            if mobile and "Cust. Contact Number" in df.columns:
+            if mobile:
                 mobile_clean = mobile.replace(" ", "")
                 df = df[df["Cust. Contact Number"].str.contains(mobile_clean)]
 
-        # 🔥 SAFE NUMERIC CLEAN
+        # 🔥 MASTER CLEAN FUNCTION (FIXED)
         def clean(col):
             if col not in df.columns:
-                return 0
+                return pd.Series([0] * len(df))
+
             return pd.to_numeric(
-                df[col].astype(str).str.replace(",", ""),
+                df[col]
+                .astype(str)
+                .str.replace(",", "")
+                .str.replace("₹", "")
+                .str.strip(),
                 errors="coerce"
             ).fillna(0)
 
+        # 🔥 APPLY CLEAN
         df["Deal Price"] = clean("Deal Price")
         df["AdvanceCash"] = clean("Booking Amt/Advance Cash")
         df["AdvanceBank"] = clean("Booking Amt/Advance Bank")
 
+        df["Fuel"] = clean("Fuel")
+        df["Tolls & Taxes"] = clean("Tolls & Taxes")
+        df["Parking"] = clean("Parking")
+        df["Driver Allowance"] = clean("Driver Allowance")
+        df["Sales Commission"] = clean("Sales Commission")
+        df["Other Expenses"] = clean("Other Expenses")
+
+        # 🔥 CALCULATIONS (NOW SAFE)
         df["Received"] = df["AdvanceCash"] + df["AdvanceBank"]
         df["Pending"] = df["Deal Price"] - df["Received"]
 
-        # ✅ STATUS SAFE
+        # 🔥 STATUS CLEAN
         if "Status" not in df.columns:
             df["Status"] = ""
 
         df["Status"] = df["Status"].astype(str).str.strip().str.lower()
         df["Status"] = df["Status"].str.replace("in progress", "progress")
 
-        # ✅ SPLIT
+        # 🔥 SPLIT
         df_completed = df[df["Status"].str.contains("completed", na=False)]
         df_progress  = df[df["Status"].str.contains("progress",  na=False)]
         df_booked    = df[df["Status"].str.contains("booked",    na=False)]
 
-        # ✅ SUMMARY
+        # 🔥 SUMMARY
         def summary(d):
             return {
                 "trips": int(len(d)),
                 "revenue": float(d["Deal Price"].sum()),
                 "received": float(d["Received"].sum()),
                 "pending": float(d["Pending"].sum()),
-                "other_expenses": float(d.get("Other Expenses", 0).sum())
+                "other_expenses": float(d["Other Expenses"].sum()) if "Other Expenses" in d.columns else 0
             }
 
-        # ✅ FINAL RETURN (ONLY ONE RETURN)
         return {
             "completed": summary(df_completed),
             "progress": summary(df_progress),
             "booked": summary(df_booked),
             "trips": df.fillna("").to_dict(orient="records")
         }
-    
+
     except Exception as e:
-        import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
     
@@ -482,7 +504,7 @@ def get_data(year: int = Query(None),
             .str.replace('\r', ' ')
             .str.replace(r'\s+', ' ', regex=True)
         )
-        df = df.replace('', np.nan)   # turn all empty strings into NaN
+        # df = df.replace('', np.nan)   # turn all empty strings into NaN
         
 
         df.columns = (
