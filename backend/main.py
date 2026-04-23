@@ -667,7 +667,7 @@ def get_data(year: int = Query(None),
         cash_total = df['Total Cash'].sum()
         bank_total = df['Total Bank'].sum()
 
-        for col in ["Fuel", "Tolls & Taxes", "Parking", "Driver Allowance", "Sales Commission"]:
+        for col in ["Fuel", "Tolls & Taxes", "Parking", "Driver Allowance", "Sales Commission", "Other Expenses"]:
             if col not in df.columns:
                 df[col] = 0
         
@@ -752,7 +752,7 @@ def get_data(year: int = Query(None),
             lambda r: r[:30] + '...' if len(r) > 30 else r
         )
 
-        cost_cols = ['Fuel', 'Tolls & Taxes', 'Parking', 'Driver Allowance', 'Sales Commission']
+        cost_cols = ['Fuel', 'Tolls & Taxes', 'Parking', 'Driver Allowance', 'Sales Commission', 'Other Expenses']
         duration_counts = df['Number of Days'].value_counts().sort_index()
 
         duration_data = []
