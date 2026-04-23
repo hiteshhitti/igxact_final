@@ -476,7 +476,7 @@ def get_data(year: int = Query(None),
         data=sheet.get_all_records()
         df = pd.DataFrame(data)
         df = df.replace('', np.nan)   # turn all empty strings into NaN
-        df = df.fillna(0) 
+        # df = df.fillna(0) 
 
         df.columns = (
             df.columns
