@@ -670,6 +670,7 @@ def get_data(year: int = Query(None),
         df['Fuel'] = clean_numeric('Fuel')
         df['Sales Commission'] = clean_numeric('Sales Commission')
         df['Other Expenses'] = clean_numeric('Other Expenses')
+        df['Difference'] = clean_numeric('Difference')
 
         
 
@@ -897,7 +898,16 @@ def get_data(year: int = Query(None),
 
 
         discrepancy_count = int(len(discrepancies))
-        discrepancy_total = float(discrepancies['Difference'].sum())
+        
+        if 'Difference' in df.columns:
+            df['Difference'] = clean_numeric('Difference')
+            discrepancies = df[df['Difference'] != 0]
+
+            discrepancy_count = int(len(discrepancies))
+            discrepancy_total = float(discrepancies['Difference'].sum())
+        else:
+            discrepancy_count = 0
+            discrepancy_total = 0
 
         # 🔥 Best values
         # best_month_row = monthly.loc[monthly['Revenue'].idxmax()]
