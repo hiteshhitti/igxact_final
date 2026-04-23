@@ -8,7 +8,7 @@ import {
   ResponsiveContainer, LabelList, PieChart, Pie, Cell
 } from "recharts";
 
-const COST_COLORS    = ['#4f8ef7', '#22d3a0', '#a78bfa', '#f97316', '#f87171'];
+const COST_COLORS    = ['#4f8ef7', '#22d3a0', '#a78bfa', '#f97316', '#f87171', '#e11d48'];
 const PAYMENT_COLORS = ['#f97316', '#4f8ef7'];
 
 
@@ -128,6 +128,8 @@ export default function Home() {
   }
 
   const kpi = data?.kpi || {};
+  const otherExpenses =
+  (data?.cost_breakdown || []).find((c: any) => c.name === "Other Expenses")?.value || 0;
   const insights = data?.insights || {};
   const monthTargets = data?.month_targets || [];
   const progressTrips = data?.pipeline?.progress || [];
@@ -181,6 +183,7 @@ export default function Home() {
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14 }}>
             <KpiCard label="Total Revenue"  value={`₹${(kpi.total_revenue || 0).toLocaleString("en-IN")}`} accent="var(--accent-primary)" />
             <KpiCard label="Total Profit"   value={`₹${(kpi.total_profit || 0).toLocaleString("en-IN")}`}  accent="var(--accent-green)" />
+            <KpiCard label="Other Expenses" value={`₹${otherExpenses.toLocaleString("en-IN")}`} accent="#f43f5e"/>
             <KpiCard label="Avg Margin"     value={`${kpi.avg_margin}%`} />
             <KpiCard label="Avg Deal Size"  value={`₹${(kpi.avg_deal || 0).toLocaleString("en-IN")}`} />
             <KpiCard label="Avg Duration"   value={`${kpi.avg_days} days`} />
@@ -436,6 +439,7 @@ export default function Home() {
                   <Bar dataKey="Parking"           stackId="a" fill="#a78bfa" />
                   <Bar dataKey="Driver Allowance"  stackId="a" fill="#f97316" />
                   <Bar dataKey="Sales Commission"  stackId="a" fill="#f87171" radius={[4,4,0,0]} />
+                  <Bar dataKey="Other Expenses"    stackId="a" fill="#e11d48" />
                 </BarChart>
               </ResponsiveContainer>
             </div>

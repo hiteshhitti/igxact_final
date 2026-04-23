@@ -337,7 +337,8 @@ def get_trips_data(
                 "trips": int(len(d)),
                 "revenue": float(d["Deal Price"].sum()),
                 "received": float(d["Received"].sum()),
-                "pending": float(d["Pending"].sum())
+                "pending": float(d["Pending"].sum()),
+                "other_expenses": float(d.get("Other Expenses", 0).sum())
             }
 
         # ✅ FINAL RETURN (ONLY ONE RETURN)
@@ -495,7 +496,7 @@ def get_data(year: int = Query(None),
 
         numeric_cols = ['Deal Price', 'Net Profit (without Driver Salary)', 'Profit Percentage',
                 'Number of Days', 'Total Cash', 'Total Bank', 'Fuel', 
-                'Tolls & Taxes', 'Parking', 'Driver Allowance', 'Sales Commission']
+                'Tolls & Taxes', 'Parking', 'Driver Allowance', 'Sales Commission', 'Other Expenses']
 
         for col in numeric_cols:
             if col in df.columns:
@@ -509,7 +510,8 @@ def get_data(year: int = Query(None),
             'Profit Percentage': 0,
             'Number of Days': 0,
             'Total Cash': 0,
-            'Total Bank': 0
+            'Total Bank': 0,
+            'Other Expenses':0
         })
 
         df['Customer Name'] = df['Customer Name'].astype(str).str.strip()
@@ -650,6 +652,7 @@ def get_data(year: int = Query(None),
         df['Driver Allowance'] = clean_numeric('Driver Allowance')
         df['Fuel'] = clean_numeric('Fuel')
         df['Sales Commission'] = clean_numeric('Sales Commission')
+        df['Other Expenses'] = clean_numeric('Other Expenses')
 
         df = df.fillna(0)
 
@@ -673,7 +676,8 @@ def get_data(year: int = Query(None),
             df["Tolls & Taxes"] +
             df["Parking"] +
             df["Driver Allowance"] +
-            df["Sales Commission"]
+            df["Sales Commission"]+
+            df["Other Expenses"]
         )
 
         monthly = df.groupby('MonthNum').agg(
@@ -702,7 +706,7 @@ def get_data(year: int = Query(None),
         ).sort_values('TripCount', ascending=False)
 
 
-        cost_cols = ["Fuel", "Tolls & Taxes", "Parking", "Driver Allowance", "Sales Commission"]
+        cost_cols = ["Fuel", "Tolls & Taxes", "Parking", "Driver Allowance", "Sales Commission", "Other Expenses"]
 
         
 
