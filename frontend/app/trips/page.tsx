@@ -56,14 +56,19 @@ export default function TripsPage() {
 
       // ⏳ jab tak role load nahi hota
       if (role === null) {
-        return null; // ya loader dikha sakta hai
+        return (
+          <div className="page-root">
+            <Navbar />
+            <div style={{ padding: 40 }}>Loading...</div>
+          </div>
+        );
       }
 
-      // ❌ user ke liye block
       if (role !== "admin") {
         return (
-          <div
-            style={{
+          <div className="page-root">
+            <Navbar />
+            <div style={{
               minHeight: "80vh",
               display: "flex",
               alignItems: "center",
@@ -71,9 +76,9 @@ export default function TripsPage() {
               fontSize: "20px",
               fontWeight: "600",
               color: "red",
-            }}
-          >
-            🚫 Access Denied
+            }}>
+              🚫 Access Denied
+            </div>
           </div>
         );
       }
