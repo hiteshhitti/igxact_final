@@ -475,8 +475,8 @@ def get_data(year: int = Query(None),
         sheet=client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0").sheet1
         data=sheet.get_all_records()
         df = pd.DataFrame(data)
-        # df = df.replace('', np.nan)   # turn all empty strings into NaN
-        df = df.replace('', '0') 
+        df = df.replace('', np.nan)   # turn all empty strings into NaN
+        
 
         df.columns = (
             df.columns
