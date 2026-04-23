@@ -29,7 +29,7 @@ const datePickerStyles = `
 `;
 
 const SKIP_COLS = new Set(["trip id","Profit Percentage","Net Profit (without Driver Salary)","Profit without commission"]);
-const NUM_COLS  = new Set(["Deal Price","Fuel","Tolls & Taxes","Parking","Driver Allowance","Sales Commissio","Number of Days"]);
+const NUM_COLS  = new Set(["Deal Price","Fuel","Tolls & Taxes","Parking","Driver Allowance","Sales Commission","Number of Days"]);
 
 export default function TripsPage() {
   const [trips, setTrips]         = useState<any[]>([]);
@@ -49,39 +49,24 @@ export default function TripsPage() {
   const [role, setRole] = useState<string | null>(null);
 
 
-  useEffect(() => {
-    const storedRole = sessionStorage.getItem("role");
-        setRole(storedRole?.trim().toLowerCase() || null);
-      }, []);
+useEffect(() => {
+  const storedRole = sessionStorage.getItem("role");
 
-      // ⏳ jab tak role load nahi hota
-      if (role === null) {
-        return (
-          <div className="page-root">
-            <Navbar />
-            <div style={{ padding: 40 }}>Loading...</div>
-          </div>
-        );
-      }
+    if (!storedRole) {
+      window.location.href = "/login";
+      return;
+    }
 
-      if (role !== "admin") {
-        return (
-          <div className="page-root">
-            <Navbar />
-            <div style={{
-              minHeight: "80vh",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              fontSize: "20px",
-              fontWeight: "600",
-              color: "red",
-            }}>
-              🚫 Access Denied
-            </div>
-          </div>
-        );
-      }
+    const cleanRole = storedRole.trim().toLowerCase();
+
+    if (cleanRole !== "admin") {
+      window.location.href = "/";
+      return;
+    }
+
+    setRole(cleanRole);
+  }, []);
+
 
 
 
@@ -192,7 +177,7 @@ const fetchTrips = async () => {
   const tolls      = num(form["Tolls & Taxes"]);
   const parking    = num(form["Parking"]);
   const driver     = num(form["Driver Allowance"]);
-  const commission = num(form["Sales Commissio"]);
+  const commission = num(form["Sales Commissionmisio"]);
   const netProfit  = Math.round(deal - (fuel + tolls + parking + driver + commission));
   const profitWithoutCommission = Math.round(netProfit + commission);
   const profitPercent = deal > 0 ? ((netProfit / deal) * 100).toFixed(1) : "0";
@@ -252,6 +237,15 @@ const fetchTrips = async () => {
     progress:  { label: "In Progress", cls: "pill-orange" },
     booked:    { label: "Booked", cls: "pill-blue" },
   };
+
+  if (!role) {
+  return (
+    <div className="page-root">
+      <Navbar />
+      <div style={{ padding: 40 }}>Loading...</div>
+    </div>
+  );
+}
 
   return (
     <div className="page-root">
