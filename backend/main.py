@@ -527,21 +527,7 @@ def get_data(year: int = Query(None),
                 'Number of Days', 'Total Cash', 'Total Bank', 'Fuel', 
                 'Tolls & Taxes', 'Parking', 'Driver Allowance', 'Sales Commission', 'Other Expenses']
 
-        for col in numeric_cols:
-            if col in df.columns:
-                df[col] = df[col].replace('', '0')
 
-
-        # 🧹 Replace null & inf
-        df = df.fillna({
-            'Deal Price': 0,
-            'Net Profit (without Driver Salary)': 0,
-            'Profit Percentage': 0,
-            'Number of Days': 0,
-            'Total Cash': 0,
-            'Total Bank': 0,
-            'Other Expenses':0
-        })
 
         df['Customer Name'] = df['Customer Name'].astype(str).str.strip()
         # df = df[df['Customer Name'] != '']
@@ -661,6 +647,8 @@ def get_data(year: int = Query(None),
 
         # 🔥 CLEAN NUMERIC COLUMNS
         def clean_numeric(col):
+            if col not in df.columns:
+                return pd.Series([0] * len(df))
             series = df[col].astype(str).str.strip()
             series = series.replace('', '0')          # pandas Series .replace(), not str method
             series = series.str.replace(',', '', regex=False)
@@ -683,7 +671,7 @@ def get_data(year: int = Query(None),
         df['Sales Commission'] = clean_numeric('Sales Commission')
         df['Other Expenses'] = clean_numeric('Other Expenses')
 
-        df = df.fillna(0)
+        
 
         # 📊 KPI calculations
         
@@ -691,7 +679,7 @@ def get_data(year: int = Query(None),
         total_profit = df['Net Profit (without Driver Salary)'].sum()
         # avg_margin = df['Profit Percentage'].mean()
 
-        df_calc = df_completed.copy()
+        df_calc = df[df['Status'].str.contains('completed', na=False)].copy()
 
         total_expense = (
             df_calc["Fuel"].sum() +
