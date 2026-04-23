@@ -660,7 +660,24 @@ def get_data(year: int = Query(None),
         
         total_revenue = df['Deal Price'].sum()
         total_profit = df['Net Profit (without Driver Salary)'].sum()
-        avg_margin = df['Profit Percentage'].mean()
+        # avg_margin = df['Profit Percentage'].mean()
+
+        df_calc = df_completed.copy()
+
+        total_expense = (
+            df_calc["Fuel"].sum() +
+            df_calc["Tolls & Taxes"].sum() +
+            df_calc["Parking"].sum() +
+            df_calc["Driver Allowance"].sum() +
+            df_calc["Sales Commission"].sum() +
+            df_calc["Other Expenses"].sum()
+        )
+
+        total_deal = df_calc["Deal Price"].sum()
+
+        profit = total_deal - total_expense
+
+        profit_percentage = (profit / total_deal * 100) if total_deal != 0 else 0
         avg_deal = df['Deal Price'].mean()
         avg_days = df['Number of Days'].mean()
 
@@ -973,7 +990,7 @@ def get_data(year: int = Query(None),
             "kpi": {
                 "total_revenue": round(float(total_revenue), 2),
                 "total_profit": round(float(total_profit), 2),
-                "avg_margin": round(float(avg_margin), 2),
+                "avg_margin": round(float(profit_percentage), 2),
                 "avg_deal": round(float(avg_deal), 2),
                 "avg_days": round(float(avg_days), 2),
                 "cash_total": round(float(cash_total), 2),
