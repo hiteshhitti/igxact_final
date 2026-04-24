@@ -567,9 +567,7 @@ def get_data(year: int = Query(None),
 
         
 
-        df_progress = df[df['Status'].str.contains('progress', na=False)]
-        df_booked = df[df['Status'].str.contains('booked', na=False)]
-        df_completed = df[df['Status'].str.contains('completed', na=False)]
+
 
         if status == "completed":
             df = df_completed.copy()
@@ -659,7 +657,9 @@ def get_data(year: int = Query(None),
         df['Other Expenses'] = clean_numeric('Other Expenses')
         df['Difference'] = clean_numeric('Difference')
 
-        
+        df_progress = df[df['Status'].str.contains('progress', na=False)]
+        df_booked = df[df['Status'].str.contains('booked', na=False)]
+        df_completed = df[df['Status'].str.contains('completed', na=False)]
 
         # 📊 KPI calculations
         
