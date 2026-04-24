@@ -258,9 +258,7 @@ def get_trips_data(
         if not client:
             raise HTTPException(status_code=500, detail="Google client failed")
 
-        sheet = client.open_by_url(
-            "https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0"
-        ).sheet1
+        sheet = client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0").sheet1
 
         data = sheet.get_all_records()
         df = pd.DataFrame(data)
@@ -516,9 +514,6 @@ def get_data(year: int = Query(None),
         )
 
 
-
-        
-
         # 🧹 Clean columns
         df.columns = df.columns.str.strip()
         # df=df.dropna(subset="Customer Name")
@@ -587,15 +582,6 @@ def get_data(year: int = Query(None),
 
         years = sorted(df['Year'].dropna().unique().tolist())
 
-        # if year:
-        #     df = df[df['Year'] == year]
-        
-        # if year is None:
-        #     year = df['Year'].max()
-        #     df = df[df['Year'] == year]
-
-        
-        # df = df[df['Year'] == year]
         
         if month:
             df = df[df['MonthNum'] == month]
@@ -676,9 +662,8 @@ def get_data(year: int = Query(None),
 
         # 📊 KPI calculations
         
-        total_revenue = df['Deal Price'].sum()
+        total_revenue = df_completed['Deal Price'].sum()
         total_profit = df['Net Profit (without Driver Salary)'].sum()
-        # avg_margin = df['Profit Percentage'].mean()
 
         df_calc = df[df['Status'].str.contains('completed', na=False)].copy()
 
