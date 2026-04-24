@@ -699,7 +699,7 @@ def get_data(year: int = Query(None),
             df["Other Expenses"]
         )
 
-        monthly = df.groupby('MonthNum').agg(
+        monthly = df_completed.groupby('MonthNum').agg(
             Month=('MonthName', 'first'),
             Trips=('Deal Price', 'count'),
             Revenue=('Deal Price', 'sum'),
@@ -709,7 +709,7 @@ def get_data(year: int = Query(None),
             RevPerTrip=('Deal Price', 'mean')
         ).reset_index()
 
-        veh = df.groupby('Vehicle Details').agg(
+        veh = df_completed.groupby('Vehicle Details').agg(
             Trips=('Deal Price', 'count'),
             TotalRevenue=('Deal Price', 'sum'),
             AvgDealPrice=('Deal Price', 'mean'),
@@ -717,7 +717,7 @@ def get_data(year: int = Query(None),
             TotalProfit=('Net Profit (without Driver Salary)', 'sum')
         ).sort_values('TotalRevenue', ascending=False)
 
-        routes = df.groupby('Route').agg(
+        routes = df_completed.groupby('Route').agg(
             TripCount=('Deal Price', 'count'),
             TotalRevenue=('Deal Price', 'sum'),
             AvgDeal=('Deal Price', 'mean'),
@@ -793,7 +793,7 @@ def get_data(year: int = Query(None),
             if col not in df.columns:
                 df[col] = 0
         
-        cost_totals = df[cost_cols].sum()
+        cost_totals = df_completed[cost_cols].sum()
 
         cost_data = []
 
@@ -858,7 +858,7 @@ def get_data(year: int = Query(None),
         routes_data = top_routes.to_dict(orient="records")
 
 
-        custs = df.groupby("Customer Name")["Deal Price"].sum().sort_values(ascending=False).head(10)
+        custs = df_completed.groupby("Customer Name")["Deal Price"].sum().sort_values(ascending=False).head(10)
 
         cust_data = custs.reset_index()
         cust_data.columns = ["Customer", "Revenue"]
