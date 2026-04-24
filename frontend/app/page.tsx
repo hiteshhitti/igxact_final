@@ -351,7 +351,7 @@ export default function Home() {
             <ResponsiveContainer width="100%" height={380}>
               <BarChart data={[...data.routes].reverse()} layout="vertical">
                 <XAxis type="number" {...axisProps} />
-                <YAxis dataKey="ShortRoute" type="category" width={200} {...axisProps} />
+                <YAxis dataKey="Route" type="category" width={200} {...axisProps} />
                 <Tooltip contentStyle={tooltipStyle} />
                 <Bar dataKey="TotalRevenue" fill="#f97316" radius={[0,6,6,0]}>
                   <LabelList dataKey="TripCount" position="right" formatter={formatTrips} style={{ fontSize: 11, fill: "var(--text-muted)" }} />
