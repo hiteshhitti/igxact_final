@@ -663,7 +663,7 @@ def get_data(year: int = Query(None),
         # 📊 KPI calculations
         
         total_revenue = df_completed['Deal Price'].sum()
-        total_profit = df['Net Profit (without Driver Salary)'].sum()
+        # total_profit = df['Net Profit (without Driver Salary)'].sum()
         
         df_calc = df[df['Status'].str.contains('completed', na=False)].copy()
 
@@ -677,7 +677,7 @@ def get_data(year: int = Query(None),
         )
 
         total_deal = df_calc["Deal Price"].sum()
-
+        total_profit=total_deal - total_expense
         profit = total_deal - total_expense
 
         profit_percentage = (profit / total_deal * 100) if total_deal != 0 else 0
