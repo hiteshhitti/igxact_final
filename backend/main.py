@@ -495,6 +495,7 @@ def get_data(year: int = Query(None),
         sheet=client.open_by_url("https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA/edit?gid=0#gid=0").sheet1
         data=sheet.get_all_records()
         df = pd.DataFrame(data)
+        df = df[~df.apply(lambda row: all(str(x).strip() == "" for x in row), axis=1)]
         df.columns = (
             df.columns
             .str.strip()
@@ -767,10 +768,6 @@ def get_data(year: int = Query(None),
         top_routes = routes.sort_values(by="TripCount", ascending=False)
 
         top_routes = routes.head(10).reset_index()
-
-        # top_routes['ShortRoute'] = top_routes['Route'].apply(
-        #     lambda r: r[:30] + '...' if len(r) > 30 else r
-        # )
 
         cost_cols = ['Fuel', 'Tolls & Taxes', 'Parking', 'Driver Allowance', 'Sales Commission', 'Other Expenses']
         duration_counts = df['Number of Days'].value_counts().sort_index()
