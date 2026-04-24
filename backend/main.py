@@ -663,7 +663,6 @@ def get_data(year: int = Query(None),
         # 📊 KPI calculations
         
         total_revenue = df_completed['Deal Price'].sum()
-        # total_profit = df['Net Profit (without Driver Salary)'].sum()
         
         df_calc = df[df['Status'].str.contains('completed', na=False)].copy()
 
@@ -678,11 +677,10 @@ def get_data(year: int = Query(None),
 
         total_deal = df_calc["Deal Price"].sum()
         total_profit=total_deal - total_expense
-        profit = total_deal - total_expense
 
-        profit_percentage = (profit / total_deal * 100) if total_deal != 0 else 0
-        avg_deal = df['Deal Price'].mean()
-        avg_days = df['Number of Days'].mean()
+        profit_percentage = (total_profit / total_deal * 100) if total_deal != 0 else 0
+        avg_deal = df_calc['Deal Price'].mean()
+        avg_days = df_calc['Number of Days'].mean()
 
         cash_total = df['Total Cash'].sum()
         bank_total = df['Total Bank'].sum()
@@ -766,11 +764,13 @@ def get_data(year: int = Query(None),
             for k, v in parking_per_day.items()
         ]
 
-        top_routes = routes.head(10).reset_index()
+        top_routes = routes.sort_values(ascending=False)
 
-        top_routes['ShortRoute'] = top_routes['Route'].apply(
-            lambda r: r[:30] + '...' if len(r) > 30 else r
-        )
+        top_routes = top_routes.head(10).reset_index()
+
+        # top_routes['ShortRoute'] = top_routes['Route'].apply(
+        #     lambda r: r[:30] + '...' if len(r) > 30 else r
+        # )
 
         cost_cols = ['Fuel', 'Tolls & Taxes', 'Parking', 'Driver Allowance', 'Sales Commission', 'Other Expenses']
         duration_counts = df['Number of Days'].value_counts().sort_index()
