@@ -569,15 +569,8 @@ def get_data(year: int = Query(None),
 
 
 
-        if status == "completed":
-            df = df_completed.copy()
-        elif status == "progress":
-            df = df_progress.copy()
-        elif status == "booked":
-            df = df_booked.copy()
 
-        progress_data = build_pipeline(df_progress.copy())
-        booked_data = build_pipeline(df_booked.copy())
+
 
         years = sorted(df['Year'].dropna().unique().tolist())
 
@@ -660,6 +653,17 @@ def get_data(year: int = Query(None),
         df_progress = df[df['Status'].str.contains('progress', na=False)]
         df_booked = df[df['Status'].str.contains('booked', na=False)]
         df_completed = df[df['Status'].str.contains('completed', na=False)]
+
+        progress_data = build_pipeline(df_progress.copy())
+        booked_data = build_pipeline(df_booked.copy())
+
+        
+        if status == "completed":
+            df = df_completed.copy()
+        elif status == "progress":
+            df = df_progress.copy()
+        elif status == "booked":
+            df = df_booked.copy()
 
         # 📊 KPI calculations
         
