@@ -48,7 +48,7 @@ useEffect(() => {
 
 }, [fromDate, toDate]);
 
-  const finalData = data?.completed_trips  || [];
+  const finalData = data?.completed || [];
   const formattedData = finalData.map((item: any) => ({
     ...item,
     formattedDate: item["Start Date"]
