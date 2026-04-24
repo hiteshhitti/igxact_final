@@ -177,7 +177,7 @@ const fetchTrips = async () => {
   const tolls      = num(form["Tolls & Taxes"]);
   const parking    = num(form["Parking"]);
   const driver     = num(form["Driver Allowance"]);
-  const commission = num(form["Sales Commissionmisio"]);
+  const commission = num(form["Sales Commission"]);
   const expenses   = num(form["Other Expenses"])
   const netProfit  = Math.round(deal - (fuel + tolls + parking + driver + commission + expenses));
   const profitWithoutCommission = Math.round(netProfit + commission);
