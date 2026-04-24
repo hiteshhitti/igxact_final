@@ -48,7 +48,10 @@ useEffect(() => {
 
 }, [fromDate, toDate]);
 
-  const finalData = data?.trips || [];
+  // const finalData = data?.trips || [];
+  const finalData = (data?.trips || []).filter(
+  (t) => t.Status?.toLowerCase().includes("completed")
+);
   const formattedData = finalData.map((item: any) => ({
     ...item,
     formattedDate: item["Start Date"]
