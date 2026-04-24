@@ -663,7 +663,9 @@ def get_data(year: int = Query(None),
         # 📊 KPI calculations
         
         total_revenue = df_completed['Deal Price'].sum()
-        total_profit = df['Net Profit (without Driver Salary)'].sum()
+        # total_profit = df['Net Profit (without Driver Salary)'].sum()
+        expense = df_completed["Fuel"].sum()+df_completed["Tolls & Taxes"].sum()+df_completed["Parking"].sum()+df_completed["Driver Allowance"].sum()+df_completed["Other Expenses"].sum()+df_completed["Sales Commission"].sum()
+        total_profit=total_revenue-expense
 
         df_calc = df[df['Status'].str.contains('completed', na=False)].copy()
 
