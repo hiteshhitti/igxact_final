@@ -763,10 +763,9 @@ def get_data(year: int = Query(None),
             {"vehicle": k, "value": float(v)}
             for k, v in parking_per_day.items()
         ]
+        
 
-        top_routes = routes.sort_values(ascending=False)
-
-        top_routes = top_routes.head(10).reset_index()
+        top_routes = routes.head(10).reset_index()
 
         top_routes['ShortRoute'] = top_routes['Route'].apply(
             lambda r: r[:30] + '...' if len(r) > 30 else r
