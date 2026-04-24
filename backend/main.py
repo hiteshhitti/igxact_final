@@ -565,11 +565,6 @@ def get_data(year: int = Query(None),
             if month:
                 df = df[df['MonthNum'] == month]
 
-        
-
-
-
-
 
 
         years = sorted(df['Year'].dropna().unique().tolist())
@@ -694,13 +689,13 @@ def get_data(year: int = Query(None),
             if col not in df.columns:
                 df[col] = 0
         
-        df["TotalExpense"] = (
-            df["Fuel"] +
-            df["Tolls & Taxes"] +
-            df["Parking"] +
-            df["Driver Allowance"] +
-            df["Sales Commission"]+
-            df["Other Expenses"]
+        df_completed["TotalExpense"] = (
+            df_completed["Fuel"] +
+            df_completed["Tolls & Taxes"] +
+            df_completed["Parking"] +
+            df_completed["Driver Allowance"] +
+            df_completed["Sales Commission"]+
+            df_completed["Other Expenses"]
         )
 
         monthly = df_completed.groupby('MonthNum').agg(
