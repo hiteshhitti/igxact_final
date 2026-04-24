@@ -664,7 +664,7 @@ def get_data(year: int = Query(None),
         
         total_revenue = df_completed['Deal Price'].sum()
         
-        df_calc = df[df['Status'].str.contains('completed', na=False)].copy()
+        df_calc = df_completed[df_completed['Status'].str.contains('completed', na=False)].copy()
 
         total_expense = (
             df_calc["Fuel"].sum() +
@@ -734,7 +734,7 @@ def get_data(year: int = Query(None),
                 df[col] = 0
 
 
-        veh_full = df.groupby("Vehicle Details")[required_cols].sum()
+        veh_full = df_completed.groupby("Vehicle Details")[required_cols].sum()
 
         
 
@@ -843,14 +843,14 @@ def get_data(year: int = Query(None),
             }
         ]
 
-        monthly_pay = df.groupby('MonthNum').agg(
+        monthly_pay = df_completed.groupby('MonthNum').agg(
             Cash=('Total Cash', 'sum'),
             Bank=('Total Bank', 'sum')
         ).reset_index()
 
         monthly_payment = monthly_pay.to_dict(orient="records")
 
-        monthly_costs = df.groupby('MonthNum')[cost_cols].sum().reset_index()
+        monthly_costs = df_completed.groupby('MonthNum')[cost_cols].sum().reset_index()
 
         monthly_cost_data = monthly_costs.to_dict(orient="records")
 
@@ -949,7 +949,7 @@ def get_data(year: int = Query(None),
         }
 
 
-        profit_duration = df.groupby("Number of Days")['Net Profit (without Driver Salary)'].sum().reset_index()
+        profit_duration = df_completed.groupby("Number of Days")['Net Profit (without Driver Salary)'].sum().reset_index()
 
         profit_duration_data = []
 
