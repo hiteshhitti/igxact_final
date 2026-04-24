@@ -768,9 +768,9 @@ def get_data(year: int = Query(None),
 
         top_routes = top_routes.head(10).reset_index()
 
-        # top_routes['ShortRoute'] = top_routes['Route'].apply(
-        #     lambda r: r[:30] + '...' if len(r) > 30 else r
-        # )
+        top_routes['ShortRoute'] = top_routes['Route'].apply(
+            lambda r: r[:30] + '...' if len(r) > 30 else r
+        )
 
         cost_cols = ['Fuel', 'Tolls & Taxes', 'Parking', 'Driver Allowance', 'Sales Commission', 'Other Expenses']
         duration_counts = df['Number of Days'].value_counts().sort_index()
