@@ -653,6 +653,8 @@ def get_data(year: int = Query(None),
         booked_data = build_pipeline(df_booked.copy())
 
         
+
+        
         if status == "completed":
             df = df_completed.copy()
         elif status == "progress":
@@ -799,7 +801,7 @@ def get_data(year: int = Query(None),
 
         # 🔥 REVENUE BREAKDOWN (expenses + profit)
 
-        total_profit_val = df['Net Profit (without Driver Salary)'].sum()
+        total_profit_val = df_completed['Net Profit (without Driver Salary)'].sum()
 
         revenue_breakdown = []
 
@@ -993,6 +995,7 @@ def get_data(year: int = Query(None),
         return {
             "revenue_breakdown": revenue_breakdown,
             "success": True,
+            "completed_trips": df_completed.fillna("").to_dict(orient="records"),
             "years": years,
             "month_targets": month_targets,
             "kpi": {
