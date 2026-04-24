@@ -50,7 +50,7 @@ useEffect(() => {
 
   // const finalData = data?.trips || [];
   const finalData = (data?.trips || []).filter(
-  (t) => t.Status?.toLowerCase().includes("completed")
+  (t:any) => t.Status?.toLowerCase().includes("completed")
 );
   const formattedData = finalData.map((item: any) => ({
     ...item,
