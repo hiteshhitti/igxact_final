@@ -150,7 +150,7 @@ const fetchTrips = async () => {
     setLoading(false);
   };
 
-  useEffect(() => { if (token) fetchTrips(); }, [token, startDate, endDate]);
+  // useEffect(() => { if (token) fetchTrips(); }, [token, startDate, endDate]);
 
   const num = (val: any) => Number(val) || 0;
 
@@ -388,7 +388,7 @@ const fetchTrips = async () => {
           </div>
 
           <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 12, padding: "14px 18px", marginBottom: 20 }}>
-            <DatePicker selected={startDate} onChange={(d: Date | null) => setStartDate(d)} placeholderText="Start date" dateFormat="dd/MM/yyyy" />
+            <DatePicker selected={startDate} onChange={(d: Date | null) => setStartDate(d) } placeholderText="Start date" dateFormat="dd/MM/yyyy" />
             <span style={{ color: "var(--text-muted)" }}>→</span>
             <DatePicker selected={endDate}   onChange={(d: Date | null) => setEndDate(d)}   placeholderText="End date"   dateFormat="dd/MM/yyyy" />
             <button className="btn-primary"  style={{ padding: "8px 16px", fontSize: 13 }} onClick={fetchTrips}>Filter</button>
