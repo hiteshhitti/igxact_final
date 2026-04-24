@@ -764,6 +764,7 @@ def get_data(year: int = Query(None),
             for k, v in parking_per_day.items()
         ]
         
+        top_routes = routes.sort_values(by="TripCount", ascending=False)
 
         top_routes = routes.head(10).reset_index()
 
