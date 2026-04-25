@@ -1,23 +1,33 @@
-import os
+"""
+utils.py
+────────
+Auth helpers: password hashing, JWT creation/verification, RBAC dependencies.
+All config values imported from config.py — never duplicated here.
+"""
+
+import hashlib
 import logging
-from passlib.context import CryptContext
-from jose import jwt, JWTError
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+import secrets
+from datetime import datetime, timedelta
+
 from fastapi import Depends, HTTPException, status
+from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
+from jose import JWTError, jwt
+from passlib.context import CryptContext
 
-logger = logging.getLogger(__name__)
+from config import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    ALGORITHM,
+    REFRESH_TOKEN_EXPIRE_DAYS,
+    SECRET_KEY,
+)
 
+logger      = logging.getLogger(__name__)
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
-SECRET_KEY = os.getenv("SECRET_KEY")
-ALGORITHM = "HS256"
-
-if not SECRET_KEY:
-    raise RuntimeError("SECRET_KEY environment variable is not set")
-
-security = HTTPBearer()
+security    = HTTPBearer()
 
 
+# ── Password ──────────────────────────────────────────────────────────────────
 def hash_password(password: str) -> str:
     return pwd_context.hash(password)
 
@@ -30,6 +40,24 @@ def verify_password(plain: str, hashed: str) -> bool:
         return False
 
 
+# ── Access token ──────────────────────────────────────────────────────────────
+def create_access_token(data: dict) -> str:
+    payload = data.copy()
+    payload["exp"]  = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    payload["type"] = "access"
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+
+# ── Refresh token ─────────────────────────────────────────────────────────────
+def create_refresh_token() -> str:
+    return secrets.token_hex(48)
+
+
+def hash_refresh_token(token: str) -> str:
+    return hashlib.sha256(token.encode()).hexdigest()
+
+
+# ── Verify access token ───────────────────────────────────────────────────────
 def verify_token(
     credentials: HTTPAuthorizationCredentials = Depends(security),
 ) -> dict:
@@ -40,6 +68,13 @@ def verify_token(
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Invalid token payload",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        if payload.get("type") != "access":
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Wrong token type",
+                headers={"WWW-Authenticate": "Bearer"},
             )
         return payload
     except JWTError as e:
@@ -47,9 +82,11 @@ def verify_token(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token is invalid or expired",
+            headers={"WWW-Authenticate": "Bearer"},
         )
 
 
+# ── RBAC ──────────────────────────────────────────────────────────────────────
 def require_admin(user: dict = Depends(verify_token)) -> dict:
     if user.get("role") != "admin":
         raise HTTPException(

@@ -35,8 +35,7 @@ app = FastAPI(title="IGXact API", version="2.2.0", docs_url=None, redoc_url=None
 # ─── Middleware (order matters — logging wraps everything) ────────────────────
 app.add_middleware(RequestLoggingMiddleware)
 
-_raw_origins = os.getenv("ALLOWED_ORIGINS", "https://igxactpixel.vercel.app")
-ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+from config import ALLOWED_ORIGINS
 
 app.add_middleware(
     CORSMiddleware,

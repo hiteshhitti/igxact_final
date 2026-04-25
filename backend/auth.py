@@ -6,9 +6,8 @@ from sqlalchemy.orm import Session
 from database import SessionLocal
 from models import User
 from schemas.auth import ChangePasswordRequest, LoginRequest, MessageResponse, TokenResponse
+from config import ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
 from utils import (
-    ACCESS_TOKEN_EXPIRE_MINUTES,
-    REFRESH_TOKEN_EXPIRE_DAYS,
     create_access_token,
     create_refresh_token,
     hash_password,

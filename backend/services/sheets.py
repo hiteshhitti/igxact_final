@@ -16,14 +16,9 @@ import pandas as pd
 from fastapi import HTTPException
 from google.oauth2.service_account import Credentials
 
+from config import GOOGLE_SCOPE as SCOPE, SHEET_URL
+
 logger = logging.getLogger(__name__)
-
-SHEET_URL = "https://docs.google.com/spreadsheets/d/11SVXk8gh1RRwS7U-rvxfnYx_ieIrqoyAavmkFWwMHjA"
-
-SCOPE = [
-    "https://www.googleapis.com/auth/spreadsheets",
-    "https://www.googleapis.com/auth/drive",
-]
 
 
 # ─────────────────────────────────────────────
