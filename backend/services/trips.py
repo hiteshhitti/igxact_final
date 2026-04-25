@@ -388,7 +388,13 @@ def get_dashboard_data(
     pay_cols = [c for c in ["Total Cash", "Total Bank"] if c in df_completed.columns]
     if pay_cols and "MonthNum" in df_completed.columns:
         monthly_pay = df_completed.groupby("MonthNum")[pay_cols].sum().reset_index()
-        monthly_payment = [{k: _safe_val(v) for k, v in r.items()} for r in monthly_pay.to_dict(orient="records")]
+        monthly_payment = []
+        for r in monthly_pay.to_dict(orient="records"):
+            row = {k: _safe_val(v) for k, v in r.items()}
+            # Rename to match frontend dataKey="Cash" and dataKey="Bank"
+            row["Cash"] = row.pop("Total Cash", 0)
+            row["Bank"] = row.pop("Total Bank", 0)
+            monthly_payment.append(row)
     else:
         monthly_payment = []
 
