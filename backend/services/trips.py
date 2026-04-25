@@ -104,6 +104,7 @@ def add_vehicle(name: str) -> dict:
 # ─────────────────────────────────────────────
 
 def add_trip(data: dict) -> dict:
+    logger.info(f"add_trip: customer='{data.get('Customer Name', '')}' vehicle='{data.get('Vehicle Details', '')}'")
     sheet = open_sheet("0")
     try:
         records = sheet.get_all_records()
@@ -141,6 +142,7 @@ def add_trip(data: dict) -> dict:
 
 
 def update_trip(trip_id: int, data: dict) -> dict:
+    logger.info(f"update_trip: trip_id={trip_id} by customer='{data.get('Customer Name', '')}'")
     sheet = open_sheet("0")
     try:
         records = sheet.get_all_records()

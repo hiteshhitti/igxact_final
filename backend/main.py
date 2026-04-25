@@ -1,24 +1,16 @@
-"""
-main.py
-───────
-HTTP layer only — no business logic here.
-All logic lives in services/trips.py and services/sheets.py.
-"""
-
 import logging
 import os
-from datetime import datetime, timedelta
 
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, HTTPException, Query, status
+from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from jose import jwt
-from pydantic import BaseModel
-from sqlalchemy.orm import Session
+from fastapi.responses import JSONResponse
 
 from auth import router as auth_router
-from database import Base, SessionLocal, engine
-from models import User
+from database import Base, engine
+from middleware import RequestLoggingMiddleware
+from schemas.trip import DashboardQueryParams, TripCreate, TripUpdate, TripQueryParams, VehicleCreate
 from services.trips import (
     add_trip,
     add_vehicle,
@@ -28,112 +20,80 @@ from services.trips import (
     query_trips,
     update_trip,
 )
-from utils import hash_password, require_admin, verify_password, verify_token
+from utils import require_admin, verify_token
 
 load_dotenv()
 
-# ─── Logging setup ─────────────────────────────────────────────────────────
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(levelname)s | %(name)s | %(message)s",
 )
 logger = logging.getLogger(__name__)
 
-# ─── App ────────────────────────────────────────────────────────────────────
-app = FastAPI(title="IGXact API", version="2.0.0")
+app = FastAPI(title="IGXact API", version="2.2.0", docs_url=None, redoc_url=None)
 
-ALLOWED_ORIGINS = os.getenv(
-    "ALLOWED_ORIGINS",
-    "https://igxactpixel.vercel.app"
-).split(",")
+# ─── Middleware (order matters — logging wraps everything) ────────────────────
+app.add_middleware(RequestLoggingMiddleware)
+
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "https://igxactpixel.vercel.app")
+ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type", "Accept"],
+    max_age=600,
 )
 
 app.include_router(auth_router)
-
-SECRET_KEY = os.getenv("SECRET_KEY")
-if not SECRET_KEY:
-    raise RuntimeError("SECRET_KEY environment variable is not set")
-
-ALGORITHM = "HS256"
-
-# ─── DB init ────────────────────────────────────────────────────────────────
 Base.metadata.create_all(bind=engine)
 
 
-# ─── Schemas ────────────────────────────────────────────────────────────────
-class LoginRequest(BaseModel):
-    username: str
-    password: str
+# ─── Global validation error handler ─────────────────────────────────────────
+# Pydantic validation failures return 422 with clear field-level messages
+# instead of a raw 500.
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request, exc: RequestValidationError):
+    errors = [
+        {"field": ".".join(str(l) for l in e["loc"][1:]), "msg": e["msg"]}
+        for e in exc.errors()
+    ]
+    logger.warning(f"Validation error on {request.url.path}: {errors}")
+    return JSONResponse(status_code=422, content={"detail": errors})
 
 
-# ─── Auth helpers ────────────────────────────────────────────────────────────
-def create_token(data: dict, expires_hours: int = 24) -> str:
-    payload = data.copy()
-    payload["exp"] = datetime.utcnow() + timedelta(hours=expires_hours)
-    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+# ─── Global unhandled exception handler ──────────────────────────────────────
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request, exc: Exception):
+    logger.error(f"Unhandled exception on {request.url.path}: {exc!r}", exc_info=True)
+    return JSONResponse(status_code=500, content={"detail": "Internal server error"})
 
 
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
-
-
-# ─── Auth routes ─────────────────────────────────────────────────────────────
-@app.post("/create-user", status_code=status.HTTP_201_CREATED)
-def create_user(db: Session = Depends(get_db)):
-    existing = db.query(User).filter(User.username == "admin").first()
-    if existing:
-        raise HTTPException(status_code=409, detail="Admin already exists")
-    user = User(username="admin", password=hash_password("1234"))
-    db.add(user)
-    db.commit()
-    logger.info("Admin user created")
-    return {"msg": "User created"}
-
-
-@app.post("/login")
-def login(data: LoginRequest, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.username == data.username).first()
-    if not user or not verify_password(data.password, user.password):
-        logger.warning(f"Failed login attempt for username='{data.username}'")
-        raise HTTPException(status_code=401, detail="Invalid credentials")
-
-    token = create_token({"sub": user.username, "role": user.role})
-    logger.info(f"Login success: username='{user.username}' role='{user.role}'")
-    return {"access_token": token, "token_type": "bearer", "role": user.role}
-
-
-# ─── Vehicles ────────────────────────────────────────────────────────────────
+# ─── Vehicles ─────────────────────────────────────────────────────────────────
 @app.get("/vehicles")
 def list_vehicles(user=Depends(verify_token)):
     return {"vehicles": get_vehicles()}
 
 
-@app.post("/vehicles")
-def create_vehicle(vehicle: dict, user=Depends(verify_token)):
-    name = vehicle.get("name", "")
-    return add_vehicle(name)
+@app.post("/vehicles", status_code=201)
+def create_vehicle(body: VehicleCreate, user=Depends(verify_token)):
+    return add_vehicle(body.name)
 
 
-# ─── Trips CRUD ──────────────────────────────────────────────────────────────
-@app.post("/add-trip")
-def create_trip(data: dict, user=Depends(require_admin)):
-    return add_trip(data)
+# ─── Trips ────────────────────────────────────────────────────────────────────
+@app.post("/add-trip", status_code=201)
+def create_trip(body: TripCreate, user=Depends(require_admin)):
+    # Convert validated schema → sheet-column dict using aliases
+    return add_trip(body.dict(by_alias=True))
 
 
 @app.put("/update-trip/{trip_id}")
-def edit_trip(trip_id: int, data: dict, user=Depends(require_admin)):
-    return update_trip(trip_id, data)
+def edit_trip(trip_id: int, body: TripUpdate, user=Depends(require_admin)):
+    if trip_id <= 0:
+        raise HTTPException(status_code=400, detail="trip_id must be a positive integer")
+    return update_trip(trip_id, body.dict(by_alias=True))
 
 
 @app.get("/columns")
@@ -144,40 +104,47 @@ def list_columns(user=Depends(verify_token)):
 # ─── Trip queries ─────────────────────────────────────────────────────────────
 @app.get("/trips")
 def get_trips(
-    start: str = Query(None),
-    end: str = Query(None),
-    trip_id: str = Query(None),
-    mobile: str = Query(None),
+    start:    str = Query(None),
+    end:      str = Query(None),
+    trip_id:  str = Query(None),
+    mobile:   str = Query(None),
     user=Depends(require_admin),
 ):
-    return query_trips(start, end, trip_id, mobile)
+    params = TripQueryParams(start=start, end=end, trip_id=trip_id, mobile=mobile)
+    return query_trips(params.start, params.end, params.trip_id, params.mobile)
 
 
 @app.get("/trips-view")
 def trips_view(
-    start: str = Query(None),
-    end: str = Query(None),
-    trip_id: str = Query(None),
-    mobile: str = Query(None),
+    start:    str = Query(None),
+    end:      str = Query(None),
+    trip_id:  str = Query(None),
+    mobile:   str = Query(None),
     user=Depends(verify_token),
 ):
-    return query_trips(start, end, trip_id, mobile)
+    params = TripQueryParams(start=start, end=end, trip_id=trip_id, mobile=mobile)
+    return query_trips(params.start, params.end, params.trip_id, params.mobile)
 
 
 # ─── Dashboard ────────────────────────────────────────────────────────────────
 @app.get("/data")
 def get_data(
-    year: int = Query(None),
-    month: int = Query(None),
-    status: str = Query("all"),
-    trip_id: str = Query(None),
-    mobile: str = Query(None),
+    year:     int = Query(None),
+    month:    int = Query(None),
+    status:   str = Query("all"),
+    trip_id:  str = Query(None),
+    mobile:   str = Query(None),
     user=Depends(verify_token),
 ):
-    return get_dashboard_data(year, month, status, trip_id, mobile)
+    params = DashboardQueryParams(
+        year=year, month=month, status=status, trip_id=trip_id, mobile=mobile
+    )
+    return get_dashboard_data(
+        params.year, params.month, params.status, params.trip_id, params.mobile
+    )
 
 
-# ─── Health ──────────────────────────────────────────────────────────────────
+# ─── Health ───────────────────────────────────────────────────────────────────
 @app.get("/health")
 def health():
-    return {"status": "ok", "version": "2.0.0"}
+    return {"status": "ok"}
