@@ -1,23 +1,18 @@
 "use client";
+import { apiFetch } from "@/lib/apiFetch";
+import { toast } from "@/lib/toast";
 import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 
-
 const datePickerStyles = `
   @keyframes spin { to { transform: rotate(360deg); } }
   .react-datepicker-wrapper { display: block; }
   .react-datepicker__input-container input {
-    background: rgba(0,0,0,0.03);
-    border: 1px solid rgba(0,0,0,0.10);
-    border-radius: 8px;
-    padding: 9px 13px;
-    color: #0f172a;
-    font-family: var(--font-body);
-    font-size: 14px;
-    outline: none;
-    min-width: 140px;
+    background: rgba(0,0,0,0.03); border: 1px solid rgba(0,0,0,0.10);
+    border-radius: 8px; padding: 9px 13px; color: #0f172a;
+    font-family: var(--font-body); font-size: 14px; outline: none; min-width: 140px;
   }
   .react-datepicker { background: #ffffff; border: 1px solid rgba(0,0,0,0.10); border-radius: 12px; font-family: var(--font-body); color: #0f172a; }
   .react-datepicker__header { background: #f0f4fb; border-bottom: 1px solid rgba(0,0,0,0.08); border-radius: 12px 12px 0 0; }
@@ -29,134 +24,79 @@ const datePickerStyles = `
 `;
 
 const SKIP_COLS = new Set(["trip id","Profit Percentage","Net Profit (without Driver Salary)","Profit without commission"]);
-const NUM_COLS  = new Set(["Deal Price","Fuel","Tolls & Taxes","Parking","Driver Allowance","Sales Commission","Number of Days"]);
+const NUM_COLS  = new Set(["Deal Price","Fuel","Tolls & Taxes","Parking","Driver Allowance","Sales Commission","Number of Days","Other Expenses","Booking Amt/Advance Cash","Booking Amt/Advance Bank","Total Cash","Total Bank"]);
+
+// ── Field-level validation ────────────────────────────────────────────────────
+function validateForm(form: any): string | null {
+  if (!form["Customer Name"]?.trim())  return "Customer Name is required";
+  if (!form["Trip From"]?.trim())      return "Trip From is required";
+  if (!form["Trip TO"]?.trim())        return "Trip To is required";
+  if (!form["Vehicle Details"]?.trim()) return "Vehicle is required";
+  const deal = Number(form["Deal Price"]);
+  if (!deal || deal <= 0)              return "Deal Price must be greater than 0";
+  return null;
+}
 
 export default function TripsPage() {
   const [trips, setTrips]         = useState<any[]>([]);
   const [columns, setColumns]     = useState<string[]>([]);
   const [form, setForm]           = useState<any>({});
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [token, setToken]         = useState<string | null>(null);
   const [hasFiltered, setHasFiltered] = useState(false);
   const [startDate, setStartDate] = useState<Date | null>(null);
   const [endDate, setEndDate]     = useState<Date | null>(null);
   const [loading, setLoading]     = useState(false);
   const [saving, setSaving]       = useState(false);
-  const [vehicles, setVehicles] = useState<string[]>([]);
-  const [vehicle, setVehicle] = useState("");
-  const [tripId, setTripId] = useState("");
-  const [mobile, setMobile] = useState("");
-  const [role, setRole] = useState<string | null>(null);
+  const [vehicles, setVehicles]   = useState<string[]>([]);
+  const [tripId, setTripId]       = useState("");
+  const [mobile, setMobile]       = useState("");
+  const [role, setRole]           = useState<string | null>(null);
+  const [formErrors, setFormErrors] = useState<string | null>(null);
 
-
-useEffect(() => {
-  const storedRole = sessionStorage.getItem("role");
-
-    if (!storedRole) {
-      window.location.href = "/login";
-      return;
-    }
-
+  // ── Auth guard ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const storedRole = sessionStorage.getItem("role");
+    if (!storedRole) { window.location.href = "/login"; return; }
     const cleanRole = storedRole.trim().toLowerCase();
-
-    if (cleanRole !== "admin") {
-      window.location.href = "/";
-      return;
-    }
-
+    if (cleanRole !== "admin") { window.location.href = "/"; return; }
     setRole(cleanRole);
   }, []);
 
-
-
-
+  // ── Load columns ──────────────────────────────────────────────────────────
   useEffect(() => {
-    const t = sessionStorage.getItem("token");
-    if (!t || t === "undefined" || t === "null") { window.location.href = "/login"; return; }
-    setToken(t);
-  }, []);
-
-  useEffect(() => {
-    if (!token) return;
-    fetch(process.env.NEXT_PUBLIC_API_URL + "/columns", { headers: { Authorization: `Bearer ${token}` } })
+    if (!role) return;
+    apiFetch("/columns")
       .then(res => res.json())
       .then(data => setColumns(Array.isArray(data) ? data : (data.columns || [])))
-      .catch(() => setColumns([]));
-  }, [token]);
+      .catch(() => toast.error("Failed to load form columns"));
+  }, [role]);
 
-
+  // ── Load vehicles ─────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!token) return;
-
-    fetch(process.env.NEXT_PUBLIC_API_URL + "/vehicles", {
-      method: "GET",
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then(res => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);  // ✅ catch 401/500
-        return res.json();
-      })
+    if (!role) return;
+    apiFetch("/vehicles")
+      .then(res => { if (!res.ok) throw new Error(); return res.json(); })
       .then(data => setVehicles(data.vehicles || []))
-      .catch(err => console.error("Vehicle fetch error:", err));
+      .catch(() => toast.error("Failed to load vehicles"));
+  }, [role]);
 
-  }, [token]);
-
-const fetchTrips = async () => {
-    if (!token) return;
-
-    // ❗ ab sirf tab empty return kare jab koi bhi filter na ho
-    if (!startDate && !endDate && !tripId && !mobile) {
-      setTrips([]);
-      setHasFiltered(false);
-      return;
+  // ── Auto-calculate Number of Days ─────────────────────────────────────────
+  useEffect(() => {
+    if (form["Start Date"] && form["End date"]) {
+      const start = new Date(form["Start Date"]);
+      const end   = new Date(form["End date"]);
+      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
+        const diff = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+        setForm((prev: any) => ({ ...prev, "Number of Days": Math.round(diff + 1) }));
+      }
     }
-
-    setLoading(true);
-
-    let url = process.env.NEXT_PUBLIC_API_URL + "/trips";
-
-    const params = new URLSearchParams();
-
-    // date filters
-    if (startDate) {
-      params.append("start", startDate.toISOString().split("T")[0]);
-    }
-
-    if (endDate) {
-      params.append("end", endDate.toISOString().split("T")[0]);
-    }
-
-    // 🔥 new filters
-    if (tripId) {
-      params.append("trip_id", tripId);
-    }
-
-    if (mobile) {
-      params.append("mobile", mobile);
-    }
-
-    url += "?" + params.toString();
-
-    const res = await fetch(url, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (res.ok) {
-      const data = await res.json();
-      setTrips(data?.trips || []);
-      setHasFiltered(true);
-    }
-
-    setLoading(false);
-  };
-
-  // useEffect(() => { if (token) fetchTrips(); }, [token, startDate, endDate]);
+  }, [form["Start Date"], form["End date"]]);
 
   const num = (val: any) => Number(val) || 0;
 
   const formatToSheetDate = (dateStr: string) => {
     if (!dateStr) return "";
-    let date = dateStr.includes("-") ? new Date(dateStr + "T00:00:00") : new Date(dateStr);
+    const date = dateStr.includes("-") ? new Date(dateStr + "T00:00:00") : new Date(dateStr);
     if (isNaN(date.getTime())) return dateStr;
     return `${String(date.getMonth()+1).padStart(2,"0")}/${String(date.getDate()).padStart(2,"0")}/${date.getFullYear()}`;
   };
@@ -172,30 +112,57 @@ const fetchTrips = async () => {
     return isNaN(date.getTime()) ? "" : date.toISOString().split("T")[0];
   };
 
+  // ── Live profit preview ───────────────────────────────────────────────────
   const deal       = num(form["Deal Price"]);
   const fuel       = num(form["Fuel"]);
   const tolls      = num(form["Tolls & Taxes"]);
   const parking    = num(form["Parking"]);
   const driver     = num(form["Driver Allowance"]);
   const commission = num(form["Sales Commission"]);
-  const expenses   = num(form["Other Expenses"])
+  const expenses   = num(form["Other Expenses"]);
   const netProfit  = Math.round(deal - (fuel + tolls + parking + driver + commission + expenses));
   const profitWithoutCommission = Math.round(netProfit + commission);
   const profitPercent = deal > 0 ? ((netProfit / deal) * 100).toFixed(1) : "0";
 
-  useEffect(() => {
-    if (form["Start Date"] && form["End date"]) {
-      const start = new Date(form["Start Date"]);
-      const end   = new Date(form["End date"]);
-      if (!isNaN(start.getTime()) && !isNaN(end.getTime())) {
-        const diff = (end.getTime() - start.getTime()) / (1000*60*60*24);
-        setForm((prev: any) => ({ ...prev, "Number of Days": Math.round(diff + 1) }));
-      }
+  // ── Search trips ──────────────────────────────────────────────────────────
+  const fetchTrips = async () => {
+    if (!startDate && !endDate && !tripId && !mobile) {
+      setTrips([]);
+      setHasFiltered(false);
+      return;
     }
-  }, [form["Start Date"], form["End date"]]);
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (startDate) params.append("start", startDate.toISOString().split("T")[0]);
+    if (endDate)   params.append("end",   endDate.toISOString().split("T")[0]);
+    if (tripId)    params.append("trip_id", tripId);
+    if (mobile)    params.append("mobile",  mobile);
 
+    try {
+      const res  = await apiFetch("/trips?" + params.toString());
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Search failed");
+      setTrips(data?.trips || []);
+      setHasFiltered(true);
+      if ((data?.trips || []).length === 0) toast.info("No trips found for the selected filters");
+    } catch (err: any) {
+      toast.error(err.message || "Search failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // ── Submit (add / update) ─────────────────────────────────────────────────
   const handleSubmit = async () => {
-    if (!token) return;
+    setFormErrors(null);
+
+    const validationError = validateForm(form);
+    if (validationError) {
+      setFormErrors(validationError);
+      toast.error(validationError);
+      return;
+    }
+
     setSaving(true);
     const payload = {
       ...form,
@@ -206,47 +173,44 @@ const fetchTrips = async () => {
       "Profit without commission": profitWithoutCommission,
       "Profit Percentage": Number(profitPercent),
     };
+
     try {
-      if (editingId) {
-        await fetch(process.env.NEXT_PUBLIC_API_URL + `/update-trip/${editingId}`, {
-          method: "PUT", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify(payload),
-        });
-      } else {
-        await fetch(process.env.NEXT_PUBLIC_API_URL + "/add-trip", {
-          method: "POST", headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify(payload),
-        });
-      }
-      setForm({}); setEditingId(null); fetchTrips();
-    } catch { alert("Error saving trip."); }
-    setSaving(false);
+      const url    = editingId != null ? `/update-trip/${editingId}` : "/add-trip";
+      const method = editingId != null ? "PUT" : "POST";
+      const res    = await apiFetch(url, { method, body: JSON.stringify(payload) });
+      const data   = await res.json();
+
+      if (!res.ok) throw new Error(data.detail || `Save failed (${res.status})`);
+
+      toast.success(editingId != null ? "Trip updated successfully!" : "Trip added successfully!");
+      setForm({});
+      setEditingId(null);
+      setFormErrors(null);
+    } catch (err: any) {
+      toast.error(err.message || "Failed to save trip");
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleEdit = (trip: any) => {
-    if (!trip) return;
-    const editableForm: any = { ...trip, status: trip.status || "booked" };
+    const editableForm: any = { ...trip };
     editableForm["Start Date"] = convertToInputDate(trip["Start Date"] || "");
     editableForm["End date"]   = convertToInputDate(trip["End date"]   || "");
-    setForm(editableForm);
     setEditingId(trip["trip id"]);
+    setForm(editableForm);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  const statusInfo: Record<string, { label: string; cls: string }> = {
-    completed: { label: "Completed", cls: "pill-green" },
-    progress:  { label: "In Progress", cls: "pill-orange" },
-    booked:    { label: "Booked", cls: "pill-blue" },
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setForm({});
+    setFormErrors(null);
   };
 
-  if (!role) {
-  return (
-    <div className="page-root">
-      <Navbar />
-      <div style={{ padding: 40 }}>Loading...</div>
-    </div>
-  );
-}
+  const visibleColumns = columns.filter(col => !SKIP_COLS.has(col));
+
+  if (!role) return null;
 
   return (
     <div className="page-root">
@@ -255,234 +219,192 @@ const fetchTrips = async () => {
       <div className="page-content">
 
         {/* Header */}
-        <div style={{ marginBottom: 32 }}>
+        <div style={{ marginBottom: 28 }}>
           <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>
-            Trip Manager
+            {editingId != null ? `Editing Trip #${editingId}` : "Add Trip"}
           </h1>
-          <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Add, edit and manage all your trips</p>
+          <p style={{ color: "var(--text-muted)", fontSize: 14 }}>
+            {editingId != null ? "Modify the trip details below" : "Fill in trip details to add a new record"}
+          </p>
         </div>
 
-        {/* Form */}
+        {/* Form validation error banner */}
+        {formErrors && (
+          <div style={{ background: "rgba(239,68,68,0.08)", border: "1px solid rgba(239,68,68,0.25)", borderRadius: 10, padding: "12px 16px", marginBottom: 20, fontSize: 13, color: "#f87171", display: "flex", alignItems: "center", gap: 8 }}>
+            ❌ {formErrors}
+          </div>
+        )}
+
+        {/* Live Profit Preview */}
+        {deal > 0 && (
+          <div style={{ background: "rgba(34,211,160,0.06)", border: "1px solid rgba(34,211,160,0.2)", borderRadius: 12, padding: "12px 18px", marginBottom: 20, display: "flex", gap: 24, flexWrap: "wrap", fontSize: 13 }}>
+            <span>Net Profit: <strong style={{ color: netProfit >= 0 ? "var(--accent-green)" : "var(--accent-red)" }}>₹{netProfit.toLocaleString("en-IN")}</strong></span>
+            <span>Margin: <strong>{profitPercent}%</strong></span>
+            <span>Without Commission: <strong>₹{profitWithoutCommission.toLocaleString("en-IN")}</strong></span>
+          </div>
+        )}
+
+        {/* Trip Form */}
         <section className="section">
-          <div style={{ background: "var(--bg-card)", border: `1px solid ${editingId ? "rgba(37,99,235,0.25)" : "var(--border-subtle)"}`, borderRadius: 20, padding: 28 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 22 }}>
-              <div>
-                <h2 className="section-title">{editingId ? `Editing Trip #${editingId}` : "New Trip"}</h2>
-                <p className="section-subtitle">{editingId ? "Make changes and save below" : "Fill in the trip details"}</p>
-              </div>
-              {editingId && (
-                <button className="btn-ghost" onClick={() => { setForm({}); setEditingId(null); }}>
-                  Cancel edit
-                </button>
-              )}
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))", gap: 14 }}>
-              {Array.isArray(columns) && columns.map((col) => {
-                if (SKIP_COLS.has(col)) return null;
-
-                if (col.toLowerCase() === "status") {
-                  return (
-                    <div key={col}>
-                      <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--text-muted)", letterSpacing: "0.06em", textTransform: "uppercase", marginBottom: 6 }}>Status</label>
-                      <select
-                        className="input-field"
-                        value={form[col] || "booked"}
-                        onChange={(e) => setForm({ ...form, [col]: e.target.value })}
-                      >
-                        <option value="booked">Booked</option>
-                        <option value="progress">In Progress</option>
-                        <option value="completed">Completed</option>
-                      </select>
-                    </div>
-                  );
-                }
-
-                const isDate   = col.toLowerCase().includes("date");
-                const isNumber = NUM_COLS.has(col) || col.toLowerCase().includes("price") || col.toLowerCase().includes("fuel") || col.toLowerCase().includes("toll") || col.toLowerCase().includes("parking") || col.toLowerCase().includes("allowance") || col.toLowerCase().includes("commiss");
-
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(240px, 1fr))", gap: 14 }}>
+            {visibleColumns.map((col) => {
+              if (col === "Vehicle Details") {
                 return (
                   <div key={col}>
-                    <label
-                      style={{
-                        display: "block",
-                        fontSize: 11,
-                        fontWeight: 600,
-                        color: "var(--text-muted)",
-                        letterSpacing: "0.06em",
-                        textTransform: "uppercase",
-                        marginBottom: 6,
-                      }}
-                    >
-                      {col}
-                    </label>
-
-                    {col === "Vehicle Details" ? (
-                      <select
-                        className="input-field"
-                        value={form[col] || ""}
-                        onChange={(e) =>
-                          setForm({ ...form, [col]: e.target.value })
-                        }
-                      >
-                        <option value="">Select Vehicle</option>
-
-                        {vehicles.map((v, i) => (
-                          <option key={i} value={v}>
-                            {v}
-                          </option>
-                        ))}
-                      </select>
-                    ) : (
-                      <input
-                        className="input-field"
-                        type={isDate ? "date" : isNumber ? "number" : "text"}
-                        placeholder={col}
-                        value={form[col] || ""}
-                        onChange={(e) =>
-                          setForm({ ...form, [col]: e.target.value })
-                        }
-                      />
-                    )}
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>{col}</label>
+                    <select className="input-field" value={form[col] || ""} onChange={e => setForm((p: any) => ({ ...p, [col]: e.target.value }))}>
+                      <option value="">Select vehicle</option>
+                      {vehicles.map((v, i) => <option key={i} value={v}>{v}</option>)}
+                    </select>
                   </div>
                 );
-              })}
-            </div>
+              }
+              if (col === "Status") {
+                return (
+                  <div key={col}>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>{col}</label>
+                    <select className="input-field" value={form[col] || "booked"} onChange={e => setForm((p: any) => ({ ...p, [col]: e.target.value }))}>
+                      <option value="booked">Booked</option>
+                      <option value="progress">In Progress</option>
+                      <option value="completed">Completed</option>
+                      <option value="cancelled">Cancelled</option>
+                    </select>
+                  </div>
+                );
+              }
+              if (col === "Start Date" || col === "End date") {
+                return (
+                  <div key={col}>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>{col}</label>
+                    <input type="date" className="input-field" value={form[col] || ""} onChange={e => setForm((p: any) => ({ ...p, [col]: e.target.value }))} />
+                  </div>
+                );
+              }
+              return (
+                <div key={col}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>{col}</label>
+                  <input
+                    type={NUM_COLS.has(col) ? "number" : "text"}
+                    className="input-field"
+                    value={form[col] || ""}
+                    onChange={e => setForm((p: any) => ({ ...p, [col]: e.target.value }))}
+                    placeholder={col}
+                  />
+                </div>
+              );
+            })}
+          </div>
 
-            {/* Live calculations */}
-            {deal > 0 && (
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))", gap: 12, marginTop: 22, padding: 18, background: "rgba(0,0,0,0.03)", borderRadius: 12, border: "1px solid var(--border-subtle)" }}>
-                <div>
-                  <p style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Net Profit</p>
-                  <p style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 800, color: netProfit >= 0 ? "var(--accent-green)" : "var(--accent-red)" }}>₹{netProfit.toLocaleString("en-IN")}</p>
-                </div>
-                <div>
-                  <p style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>w/o Commission</p>
-                  <p style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 800, color: "var(--accent-primary)" }}>₹{profitWithoutCommission.toLocaleString("en-IN")}</p>
-                </div>
-                <div>
-                  <p style={{ fontSize: 11, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 4 }}>Margin</p>
-                  <p style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 800, color: "var(--accent-purple)" }}>{profitPercent}%</p>
-                </div>
+          <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
+            <button className="btn-primary" onClick={handleSubmit} disabled={saving} style={{ opacity: saving ? 0.7 : 1, display: "flex", alignItems: "center", gap: 8 }}>
+              {saving && <div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid rgba(255,255,255,0.3)", borderTopColor: "#fff", animation: "spin 0.7s linear infinite" }} />}
+              {saving ? "Saving…" : editingId != null ? "Update Trip" : "Add Trip"}
+            </button>
+            {editingId != null && (
+              <button className="btn-ghost" onClick={handleCancelEdit}>Cancel Edit</button>
+            )}
+          </div>
+        </section>
+
+        {/* Search */}
+        <section className="section">
+          <div className="section-header"><h2 className="section-title">Search Trips</h2></div>
+          <div style={{ display: "flex", gap: 12, flexWrap: "wrap", alignItems: "flex-end" }}>
+            <div>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", marginBottom: 6 }}>FROM</label>
+              <DatePicker selected={startDate} onChange={(d: Date | null) => setStartDate(d)} placeholderText="Start date" dateFormat="dd/MM/yyyy" className="input-field" />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", marginBottom: 6 }}>TO</label>
+              <DatePicker selected={endDate} onChange={(d: Date | null) => setEndDate(d)} placeholderText="End date" dateFormat="dd/MM/yyyy" className="input-field" />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", marginBottom: 6 }}>TRIP ID</label>
+              <input className="input-field" placeholder="e.g. 1024" value={tripId} onChange={e => setTripId(e.target.value)} style={{ width: 110 }} />
+            </div>
+            <div>
+              <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", marginBottom: 6 }}>MOBILE</label>
+              <input className="input-field" placeholder="Mobile number" value={mobile} onChange={e => setMobile(e.target.value)} style={{ width: 150 }} />
+            </div>
+            <button className="btn-primary" onClick={fetchTrips} disabled={loading} style={{ opacity: loading ? 0.7 : 1 }}>
+              {loading ? "Searching…" : "Search"}
+            </button>
+            {hasFiltered && (
+              <button className="btn-ghost" onClick={() => { setStartDate(null); setEndDate(null); setTripId(""); setMobile(""); setTrips([]); setHasFiltered(false); }}>
+                Clear
+              </button>
+            )}
+          </div>
+        </section>
+
+        {/* Results */}
+        {hasFiltered && (
+          <section className="section">
+            <div className="section-header">
+              <h2 className="section-title">Results</h2>
+              <p className="section-subtitle">{trips.length} trip{trips.length !== 1 ? "s" : ""} found</p>
+            </div>
+            {loading ? (
+              <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
+                <div style={{ width: 32, height: 32, borderRadius: "50%", border: "3px solid rgba(79,142,247,0.15)", borderTopColor: "var(--accent-primary)", animation: "spin 0.8s linear infinite" }} />
+              </div>
+            ) : trips.length === 0 ? (
+              <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 14, padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>
+                No trips found
+              </div>
+            ) : (
+              <div style={{ overflowX: "auto" }}>
+                <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 13 }}>
+                  <thead>
+                    <tr style={{ borderBottom: "2px solid var(--border-subtle)" }}>
+                      {["#", "Customer", "Route", "Date", "Vehicle", "Deal", "Net Profit", "Status", ""].map((h) => (
+                        <th key={h} style={{ padding: "10px 12px", textAlign: "left", fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {trips.map((trip: any, i: number) => {
+                      const tDeal   = Number(trip["Deal Price"] || 0);
+                      const tFuel   = Number(trip["Fuel"] || 0);
+                      const tTolls  = Number(trip["Tolls & Taxes"] || 0);
+                      const tPark   = Number(trip["Parking"] || 0);
+                      const tDriver = Number(trip["Driver Allowance"] || 0);
+                      const tComm   = Number(trip["Sales Commission"] || 0);
+                      const tOther  = Number(trip["Other Expenses"] || 0);
+                      const tProfit = tDeal - (tFuel + tTolls + tPark + tDriver + tComm + tOther);
+                      const status  = (trip["Status"] || "").toLowerCase();
+                      const statusColor = status.includes("completed") ? "var(--accent-green)" : status.includes("progress") ? "var(--accent-orange)" : "var(--accent-primary)";
+                      return (
+                        <tr key={i} style={{ borderBottom: "1px solid var(--border-subtle)", background: i % 2 === 0 ? "transparent" : "rgba(0,0,0,0.015)" }}>
+                          <td style={{ padding: "10px 12px", fontWeight: 600 }}>{trip["trip id"]}</td>
+                          <td style={{ padding: "10px 12px" }}>
+                            <div>{trip["Customer Name"]}</div>
+                            <div style={{ fontSize: 11, color: "var(--text-muted)" }}>{trip["Cust. Contact Number"]}</div>
+                          </td>
+                          <td style={{ padding: "10px 12px" }}>{trip["Trip From"]} → {trip["Trip TO"]}</td>
+                          <td style={{ padding: "10px 12px", whiteSpace: "nowrap", color: "var(--text-muted)" }}>{trip["Start Date"]}</td>
+                          <td style={{ padding: "10px 12px" }}>{trip["Vehicle Details"]}</td>
+                          <td style={{ padding: "10px 12px", fontWeight: 600 }}>₹{tDeal.toLocaleString("en-IN")}</td>
+                          <td style={{ padding: "10px 12px", fontWeight: 600, color: tProfit >= 0 ? "var(--accent-green)" : "var(--accent-red)" }}>₹{tProfit.toLocaleString("en-IN")}</td>
+                          <td style={{ padding: "10px 12px" }}>
+                            <span style={{ fontSize: 11, fontWeight: 600, color: statusColor, background: `${statusColor}18`, padding: "3px 8px", borderRadius: 6 }}>
+                              {trip["Status"]}
+                            </span>
+                          </td>
+                          <td style={{ padding: "10px 12px" }}>
+                            <button onClick={() => handleEdit(trip)} style={{ fontSize: 12, color: "var(--accent-primary)", fontWeight: 600, cursor: "pointer", background: "none", border: "none" }}>
+                              Edit
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
-
-            <button
-              className="btn-primary"
-              onClick={handleSubmit}
-              disabled={saving}
-              style={{ marginTop: 20, padding: "11px 28px", opacity: saving ? 0.7 : 1 }}
-            >
-              {saving
-                ? <span style={{ display: "flex", alignItems: "center", gap: 8 }}><div style={{ width: 14, height: 14, borderRadius: "50%", border: "2px solid rgba(0,0,0,0.15)", borderTopColor: "var(--text-primary)", animation: "spin 0.7s linear infinite" }} /> Saving…</span>
-                : editingId ? "Update Trip" : "Add Trip"
-              }
-            </button>
-          </div>
-        </section>
-
-        {/* Filter */}
-        <section className="section">
-          <div className="section-header">
-            <h2 className="section-title">Trip List</h2>
-            <p className="section-subtitle">Filter by date to browse and edit trips</p>
-          </div>
-
-          <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 12, padding: "14px 18px", marginBottom: 20 }}>
-            <DatePicker selected={startDate} onChange={(d: Date | null) => setStartDate(d) } placeholderText="Start date" dateFormat="dd/MM/yyyy" />
-            <span style={{ color: "var(--text-muted)" }}>→</span>
-            <DatePicker selected={endDate}   onChange={(d: Date | null) => setEndDate(d)}   placeholderText="End date"   dateFormat="dd/MM/yyyy" />
-            <button className="btn-primary"  style={{ padding: "8px 16px", fontSize: 13 }} onClick={fetchTrips}>Filter</button>
-            <button className="btn-ghost"    style={{ padding: "8px 14px", fontSize: 13 }} onClick={() => { setStartDate(null); setEndDate(null); setTrips([]); setHasFiltered(false); }}>Reset</button>
-            {loading && <div style={{ width: 18, height: 18, borderRadius: "50%", border: "2px solid rgba(37,99,235,0.20)", borderTopColor: "var(--accent-primary)", animation: "spin 0.7s linear infinite" }} />}
-          </div>
-
-                  <div style={{
-                      display: "flex",
-                      gap: 12,
-                      alignItems: "center",
-                      flexWrap: "wrap"
-                    }}>
-
-                      <input
-                        type="text"
-                        placeholder="Trip ID"
-                        value={tripId}
-                        onChange={(e) => {
-                          setTripId(e.target.value);
-                          if (e.target.value) setMobile("");
-                        }}
-                        className="input-field"
-                      />
-
-                      <input
-                        type="text"
-                        placeholder="Mobile Number"
-                        value={mobile}
-                        onChange={(e) => {
-                          setMobile(e.target.value);
-                          if (e.target.value) setTripId("");
-                        }}
-                        className="input-field"
-                      />
-
-                      {/* 🔥 YAHAN BUTTON ADD KAR */}
-                      <button
-                        onClick={fetchTrips}
-                        className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white"
-                      >
-                        Search
-                      </button>
-
-                    </div>
-
-          {!hasFiltered && (
-            <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 14, padding: "48px 32px", textAlign: "center" }}>
-              <p style={{ fontSize: 32, marginBottom: 12 }}>🗓️</p>
-              <p style={{ color: "var(--text-secondary)", fontSize: 15, marginBottom: 6 }}>Select a date range to view trips</p>
-              <p style={{ color: "var(--text-muted)", fontSize: 13 }}>Use the filter above to find specific trips</p>
-            </div>
-          )}
-
-          {hasFiltered && trips.length === 0 && (
-            <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 14, padding: "48px 32px", textAlign: "center" }}>
-              <p style={{ fontSize: 32, marginBottom: 12 }}>😔</p>
-              <p style={{ color: "var(--text-secondary)", fontSize: 15 }}>No trips found for this date range</p>
-            </div>
-          )}
-
-          {hasFiltered && trips.length > 0 && (
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {trips.map((t: any) => {
-                const st = statusInfo[t.status] || { label: t.status, cls: "pill-blue" };
-                return (
-                  <div key={t["trip id"]} style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 12, padding: "14px 18px", display: "flex", justifyContent: "space-between", alignItems: "center", transition: "border-color 0.2s ease" }}
-                    onMouseEnter={e => (e.currentTarget.style.borderColor = "rgba(0,0,0,0.10)")}
-                    onMouseLeave={e => (e.currentTarget.style.borderColor = "rgba(0,0,0,0.06)")}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 14, flexWrap: "wrap" }}>
-                      <span style={{ fontSize: 12, color: "var(--text-muted)", fontWeight: 600, minWidth: 50 }}>#{t["trip id"]}</span>
-                      <span style={{ fontSize: 14, fontWeight: 600, color: "var(--text-primary)" }}>{t["Customer Name"] || "—"}</span>
-                      <span style={{ fontSize: 13, color: "var(--text-secondary)" }}>{t["Trip From"]} → {t["Trip TO"]}</span>
-                      <span className={`pill ${st.cls}`}>{st.label}</span>
-                      {t["Deal Price"] && (
-                        <span style={{ fontSize: 13, color: "var(--text-muted)" }}>₹{Number(t["Deal Price"]).toLocaleString("en-IN")}</span>
-                      )}
-                    </div>
-                    <button
-                      className="btn-ghost"
-                      style={{ padding: "6px 14px", fontSize: 13, flexShrink: 0, marginLeft: 12 }}
-                      onClick={() => handleEdit(t)}
-                    >
-                      Edit
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </section>
-
+          </section>
+        )}
       </div>
     </div>
   );

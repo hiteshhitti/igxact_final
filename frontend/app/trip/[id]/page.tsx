@@ -1,5 +1,7 @@
 "use client";
 
+import { apiFetch } from "@/lib/apiFetch";
+import { toast } from "@/lib/toast";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 
@@ -7,36 +9,24 @@ export default function TripDetail() {
   const params = useParams();
   const id = params?.id;
 
-  const [trip, setTrip] = useState<any>(null);
+  const [trip, setTrip]     = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError]   = useState<string | null>(null);
 
   useEffect(() => {
-    if (!id) return; // 🔥 MOST IMPORTANT LINE
+    if (!id) return;
 
-    const fetchTrip = async () => {
-      try {
-        const token = localStorage.getItem("token");
-
-        console.log("ID:", id); // 🔥 debug
-
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_URL}/trips?trip_id=${id}`,
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-          }
-        );
-
-        const data = await res.json();
-        console.log("DATA:", data);
-
-        setTrip(data.trips?.[0]);
-      } catch (err) {
-        console.error("Error:", err);
-      }
-    };
-
-    fetchTrip();
+    setLoading(true);
+    apiFetch(`/trips?trip_id=${id}`)
+      .then(async res => {
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || `Error ${res.status}`);
+        }
+        return res.json();
+      })
+      .then(data => { setTrip(data.trips?.[0] || null); setLoading(false); })
+      .catch(err => { setError(err.message); setLoading(false); toast.error("Failed to load trip"); });
   }, [id]);
 
   if (!id) return <div className="p-6">Invalid Trip ID</div>;

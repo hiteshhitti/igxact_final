@@ -1,4 +1,6 @@
 "use client";
+import { apiFetch } from "@/lib/apiFetch";
+import { toast } from "@/lib/toast";
 
 import Navbar from "@/components/Navbar";
 import DatePicker from "react-datepicker";
@@ -23,6 +25,7 @@ export default function MonthlyPage() {
   const [fromDate, setFromDate] = useState<Date | null>(null);
   const [toDate, setToDate]     = useState<Date | null>(null);
   const [loading, setLoading]   = useState(false);
+  const [error, setError]       = useState<string | null>(null);
 
 useEffect(() => {
   const token = sessionStorage.getItem("token");
@@ -35,16 +38,26 @@ useEffect(() => {
 
   setLoading(true);
 
-  let endpoint = role === "admin" ? "/trips" : "/trips-view";
-  let url = process.env.NEXT_PUBLIC_API_URL + endpoint;
+  const endpoint = role === "admin" ? "/trips" : "/trips-view";
+  const params = new URLSearchParams();
+  if (fromDate) params.set("start", fromDate.toISOString().split("T")[0]);
+  if (toDate)   params.set("end",   toDate.toISOString().split("T")[0]);
+  const qs = params.toString();
 
-  if (fromDate) url += `?start=${fromDate.toISOString().split("T")[0]}`;
-  if (toDate)   url += `${fromDate ? "&" : "?"}end=${toDate.toISOString().split("T")[0]}`;
-
-  fetch(url, { headers: { Authorization: `Bearer ${token}` } })
-    .then(res => res.json())
-    .then(res => { setData(res); setLoading(false); })
-    .catch(() => setLoading(false));
+  apiFetch(`${endpoint}${qs ? "?" + qs : ""}`)
+    .then(async res => {
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || `Error ${res.status}`);
+      }
+      return res.json();
+    })
+    .then(res => { setData(res); setLoading(false); setError(null); })
+    .catch(err => {
+      setLoading(false);
+      setError(err.message || "Failed to load data");
+      toast.error(err.message || "Failed to load date range data");
+    });
 
 }, [fromDate, toDate]);
 

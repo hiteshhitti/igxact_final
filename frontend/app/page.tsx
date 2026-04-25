@@ -1,4 +1,6 @@
 "use client";
+import { apiFetch } from "@/lib/apiFetch";
+import { toast } from "@/lib/toast";
 import Navbar from "@/components/Navbar";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -10,8 +12,6 @@ import {
 
 const COST_COLORS    = ['#4f8ef7', '#22d3a0', '#a78bfa', '#f97316', '#f87171', '#e11d48'];
 const PAYMENT_COLORS = ['#f97316', '#4f8ef7'];
-
-
 
 const tooltipStyle = {
   background: "rgba(255,255,255,0.97)",
@@ -25,23 +25,21 @@ const tooltipStyle = {
 
 const axisProps = { stroke: "#475569", fontSize: 12, fontFamily: "var(--font-body)" };
 
+const Spinner = () => (
+  <>
+    <div style={{ width: 36, height: 36, borderRadius: "50%", border: "3px solid rgba(79,142,247,0.15)", borderTopColor: "var(--accent-primary)", animation: "spin 0.8s linear infinite" }} />
+    <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+  </>
+);
+
 const TripCard = ({ trip, onClick }: any) => {
   const pending = trip["Pending"];
   const pct = trip["Deal Price"] ? Math.round((trip["Received"] / trip["Deal Price"]) * 100) : 0;
   return (
-    <div 
-      className="trip-card"
-      onClick={onClick}
-      style={{ cursor: "pointer" }}
-    >
+    <div className="trip-card" onClick={onClick} style={{ cursor: "pointer" }}>
       <div style={{ marginBottom: 8 }}>
-        <p style={{ fontSize: 13, fontWeight: 600 }}>
-          #{trip["trip id"]} • {trip["Customer Name"]}
-        </p>
-
-        <p style={{ fontSize: 11, color: "var(--text-muted)" }}>
-          📞 {trip["Cust. Contact Number"]}
-        </p>
+        <p style={{ fontSize: 13, fontWeight: 600 }}>#{trip["trip id"]} • {trip["Customer Name"]}</p>
+        <p style={{ fontSize: 11, color: "var(--text-muted)" }}>📞 {trip["Cust. Contact Number"]}</p>
       </div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
         <div>
@@ -52,9 +50,7 @@ const TripCard = ({ trip, onClick }: any) => {
             {trip["Start Date"]} – {trip["End date"]}
           </p>
         </div>
-        <span className="pill pill-blue" style={{ fontSize: 11 }}>
-          {trip["Vehicle Details"]}
-        </span>
+        <span className="pill pill-blue" style={{ fontSize: 11 }}>{trip["Vehicle Details"]}</span>
       </div>
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
         <div style={{ background: "rgba(0,0,0,0.03)", borderRadius: 8, padding: "8px 10px" }}>
@@ -85,9 +81,11 @@ const KpiCard = ({ label, value, accent }: { label: string; value: string | numb
 );
 
 export default function Home() {
-  const [year, setYear] = useState<number | null>(null);
-  const [years, setYears] = useState<number[]>([]);
-  const [data, setData] = useState<any>(null);
+  const [year, setYear]             = useState<number | null>(null);
+  const [years, setYears]           = useState<number[]>([]);
+  const [data, setData]             = useState<any>(null);
+  const [loading, setLoading]       = useState(true);
+  const [error, setError]           = useState<string | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<any>(null);
   const { push } = useSmoothRouter();
   const router = useRouter();
@@ -99,51 +97,76 @@ export default function Home() {
       window.location.href = "/login";
       return;
     }
-    let url = process.env.NEXT_PUBLIC_API_URL + "/data";
-    if (year) url += `?year=${year}`;
-    fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+
+    setLoading(true);
+    setError(null);
+
+    const path = year ? `/data?year=${year}` : "/data";
+    apiFetch(path)
       .then(async (res) => {
-        if (!res.ok) return;
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || `Server error (${res.status})`);
+        }
         return res.json();
       })
       .then((res) => {
-        if (!res) return;
         setData(res);
         setYears(res.years || []);
+        setLoading(false);
       })
-      .catch(() => {});
+      .catch((err) => {
+        setError(err.message || "Failed to load dashboard");
+        setLoading(false);
+        toast.error(err.message || "Failed to load dashboard");
+      });
   }, [year]);
 
-  if (!data || !data.kpi) {
+  // ── Loading state ─────────────────────────────────────────────────────────
+  if (loading) {
     return (
       <div className="page-root">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100vh", flexDirection: "column", gap: 16 }}>
-          <div style={{ width: 40, height: 40, borderRadius: "50%", border: "3px solid rgba(79,142,247,0.2)", borderTopColor: "var(--accent-primary)", animation: "spin 0.8s linear infinite" }} />
-          <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Loading your dashboard…</p>
-          <style>{`@keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }`}</style>
+        <Navbar />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "calc(100vh - 64px)", flexDirection: "column", gap: 16 }}>
+          <Spinner />
+          <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Loading dashboard…</p>
         </div>
-  
       </div>
     );
   }
 
-  const kpi = data?.kpi || {};
-  const otherExpenses =
-  (data?.cost_breakdown || []).find((c: any) => c.name === "Other Expenses")?.value || 0;
-  const insights = data?.insights || {};
+  // ── Error state ───────────────────────────────────────────────────────────
+  if (error) {
+    return (
+      <div className="page-root">
+        <Navbar />
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "calc(100vh - 64px)", flexDirection: "column", gap: 16 }}>
+          <p style={{ fontSize: 32 }}>⚠️</p>
+          <p style={{ color: "var(--text-primary)", fontSize: 16, fontWeight: 600 }}>Could not load dashboard</p>
+          <p style={{ color: "var(--text-muted)", fontSize: 13 }}>{error}</p>
+          <button className="btn-primary" style={{ marginTop: 8 }} onClick={() => { setError(null); setLoading(true); setData(null); }}>
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const kpi          = data?.kpi || {};
+  const otherExpenses = (data?.cost_breakdown || []).find((c: any) => c.name === "Other Expenses")?.value || 0;
+  const insights     = data?.insights || {};
   const monthTargets = data?.month_targets || [];
   const progressTrips = data?.pipeline?.progress || [];
   const bookedTrips   = data?.pipeline?.booked   || [];
   const progressTotal    = progressTrips.reduce((a: number, b: any) => a + (b["Deal Price"] || 0), 0);
-  const progressReceived = progressTrips.reduce((a: number, b: any) => a + (b["Received"] || 0), 0);
+  const progressReceived = progressTrips.reduce((a: number, b: any) => a + (b["Received"]   || 0), 0);
   const bookedTotal      = bookedTrips.reduce((a: number, b: any) => a + (b["Deal Price"] || 0), 0);
-  const bookedReceived   = bookedTrips.reduce((a: number, b: any) => a + (b["Received"] || 0), 0);
-  const formatTrips = (v: any) => `${v ?? 0} trips`;
+  const bookedReceived   = bookedTrips.reduce((a: number, b: any) => a + (b["Received"]   || 0), 0);
+  const formatTrips  = (v: any) => `${v ?? 0} trips`;
 
   return (
     <div className="page-root">
       <Navbar />
-
       <div className="page-content">
 
         {/* Page header */}
@@ -152,14 +175,7 @@ export default function Home() {
             <h1 style={{ fontFamily: "var(--font-display)", fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 4 }}>
               Dashboard
             </h1>
-
-              <button
-                onClick={() => router.push("/change-password")}
-                className="text-gray-400 hover:text-white text-xl"
-                title="Change Password"
-              >
-                ⚙️
-              </button>
+            <button onClick={() => router.push("/change-password")} className="text-gray-400 hover:text-white text-xl" title="Change Password">⚙️</button>
             <p style={{ color: "var(--text-muted)", fontSize: 14 }}>Your travel business at a glance</p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
@@ -172,9 +188,7 @@ export default function Home() {
               <option value="">Latest year</option>
               {years.map((y) => <option key={y} value={y}>{y}</option>)}
             </select>
-            <button className="btn-ghost" style={{ fontSize: 13 }} onClick={() => push("/insights")}>
-              View insights →
-            </button>
+            <button className="btn-ghost" style={{ fontSize: 13 }} onClick={() => push("/insights")}>View insights →</button>
           </div>
         </div>
 
@@ -182,11 +196,11 @@ export default function Home() {
         <section className="section">
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 14 }}>
             <KpiCard label="Total Revenue"  value={`₹${(kpi.total_revenue || 0).toLocaleString("en-IN")}`} accent="var(--accent-primary)" />
-            <KpiCard label="Total Profit"   value={`₹${(kpi.total_profit || 0).toLocaleString("en-IN")}`}  accent="var(--accent-green)" />
-            <KpiCard label="Other Expenses" value={`₹${otherExpenses.toLocaleString("en-IN")}`} accent="#f43f5e"/>
-            <KpiCard label="Avg Margin"     value={`${kpi.avg_margin}%`} />
-            <KpiCard label="Avg Deal Size"  value={`₹${(kpi.avg_deal || 0).toLocaleString("en-IN")}`} />
-            <KpiCard label="Avg Duration"   value={`${kpi.avg_days} days`} />
+            <KpiCard label="Total Profit"   value={`₹${(kpi.total_profit  || 0).toLocaleString("en-IN")}`} accent="var(--accent-green)" />
+            <KpiCard label="Other Expenses" value={`₹${otherExpenses.toLocaleString("en-IN")}`} accent="#f43f5e" />
+            <KpiCard label="Avg Margin"     value={`${kpi.avg_margin ?? 0}%`} />
+            <KpiCard label="Avg Deal Size"  value={`₹${(kpi.avg_deal  || 0).toLocaleString("en-IN")}`} />
+            <KpiCard label="Avg Duration"   value={`${kpi.avg_days ?? 0} days`} />
             <KpiCard label="Cash Collected" value={`₹${(kpi.cash_total || 0).toLocaleString("en-IN")}`} accent="var(--accent-orange)" />
             <KpiCard label="Bank Collected" value={`₹${(kpi.bank_total || 0).toLocaleString("en-IN")}`} accent="var(--accent-purple)" />
           </div>
@@ -227,7 +241,7 @@ export default function Home() {
           </section>
         )}
 
-        {/* In Progress Trips */}
+        {/* In Progress */}
         <section className="section">
           <div className="section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
             <div>
@@ -242,16 +256,12 @@ export default function Home() {
           {progressTrips.length === 0
             ? <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 14, padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>No active trips</div>
             : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14, maxHeight: 420, overflowY: "auto", paddingRight: 4 }}>
-                {progressTrips.map((trip: any, i: number) => <TripCard
-                                                                    key={i}
-                                                                    trip={trip}
-                                                                    onClick={() => setSelectedTrip(trip)}
-                                                                  />)}
+                {progressTrips.map((trip: any, i: number) => <TripCard key={i} trip={trip} onClick={() => setSelectedTrip(trip)} />)}
               </div>
           }
         </section>
 
-        {/* Booked Trips */}
+        {/* Booked */}
         <section className="section">
           <div className="section-header" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
             <div>
@@ -266,19 +276,14 @@ export default function Home() {
           {bookedTrips.length === 0
             ? <div style={{ background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 14, padding: "32px", textAlign: "center", color: "var(--text-muted)", fontSize: 14 }}>No booked trips</div>
             : <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 14, maxHeight: 420, overflowY: "auto", paddingRight: 4 }}>
-                {bookedTrips.map((trip: any, i: number) => <TripCard key={i} 
-                                                                      trip={trip}
-                                                                      onClick={() => setSelectedTrip(trip)}
-                />)}
+                {bookedTrips.map((trip: any, i: number) => <TripCard key={i} trip={trip} onClick={() => setSelectedTrip(trip)} />)}
               </div>
           }
         </section>
 
         {/* Charts */}
         <section className="section">
-          <div className="section-header">
-            <h2 className="section-title">Revenue & Profit</h2>
-          </div>
+          <div className="section-header"><h2 className="section-title">Revenue & Profit</h2></div>
           <div className="chart-card">
             <h2>Monthly Revenue & Profit</h2>
             <ResponsiveContainer width="100%" height={300}>
@@ -296,7 +301,7 @@ export default function Home() {
                 <XAxis dataKey="Month" {...axisProps} />
                 <YAxis {...axisProps} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Legend wrapperStyle={{ fontFamily: "var(--font-body)", fontSize: 12, color: "var(--text-secondary)" }} />
+                <Legend wrapperStyle={{ fontFamily: "var(--font-body)", fontSize: 12 }} />
                 <Bar dataKey="Revenue"   fill="url(#gradRev)"    radius={[6,6,0,0]} />
                 <Bar dataKey="NetProfit" fill="url(#gradProfit)" radius={[6,6,0,0]} />
               </BarChart>
@@ -371,7 +376,7 @@ export default function Home() {
                     {data.cost_breakdown.map((_: any, i: number) => <Cell key={i} fill={COST_COLORS[i % COST_COLORS.length]} />)}
                   </Pie>
                   <Tooltip contentStyle={tooltipStyle} />
-                  <Legend wrapperStyle={{ fontFamily: "var(--font-body)", fontSize: 12, color: "var(--text-secondary)" }} />
+                  <Legend wrapperStyle={{ fontFamily: "var(--font-body)", fontSize: 12 }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -383,7 +388,7 @@ export default function Home() {
                     {(data.revenue_breakdown || []).map((_: any, i: number) => <Cell key={i} fill={COST_COLORS[i % COST_COLORS.length]} />)}
                   </Pie>
                   <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => `₹${(v ?? 0).toLocaleString("en-IN")}`} />
-                  <Legend wrapperStyle={{ fontFamily: "var(--font-body)", fontSize: 12, color: "var(--text-secondary)" }} />
+                  <Legend wrapperStyle={{ fontFamily: "var(--font-body)", fontSize: 12 }} />
                 </PieChart>
               </ResponsiveContainer>
             </div>
@@ -433,13 +438,13 @@ export default function Home() {
                   <XAxis dataKey="MonthNum" {...axisProps} />
                   <YAxis {...axisProps} />
                   <Tooltip contentStyle={tooltipStyle} />
-                  <Legend wrapperStyle={{ fontFamily: "var(--font-body)", fontSize: 12, color: "var(--text-secondary)" }} />
-                  <Bar dataKey="Fuel"              stackId="a" fill="#4f8ef7" />
-                  <Bar dataKey="Tolls & Taxes"     stackId="a" fill="#22d3a0" />
-                  <Bar dataKey="Parking"           stackId="a" fill="#a78bfa" />
-                  <Bar dataKey="Driver Allowance"  stackId="a" fill="#f97316" />
-                  <Bar dataKey="Sales Commission"  stackId="a" fill="#f87171" radius={[4,4,0,0]} />
-                  <Bar dataKey="Other Expenses"    stackId="a" fill="#e11d48" />
+                  <Legend wrapperStyle={{ fontFamily: "var(--font-body)", fontSize: 12 }} />
+                  <Bar dataKey="Fuel"             stackId="a" fill="#4f8ef7" />
+                  <Bar dataKey="Tolls & Taxes"    stackId="a" fill="#22d3a0" />
+                  <Bar dataKey="Parking"          stackId="a" fill="#a78bfa" />
+                  <Bar dataKey="Driver Allowance" stackId="a" fill="#f97316" />
+                  <Bar dataKey="Sales Commission" stackId="a" fill="#f87171" radius={[4,4,0,0]} />
+                  <Bar dataKey="Other Expenses"   stackId="a" fill="#e11d48" />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -450,7 +455,7 @@ export default function Home() {
                   <XAxis dataKey="MonthNum" {...axisProps} tickFormatter={(v: any) => ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][v-1]} />
                   <YAxis {...axisProps} />
                   <Tooltip contentStyle={tooltipStyle} formatter={(v: any) => `₹${(v ?? 0).toLocaleString("en-IN")}`} />
-                  <Legend wrapperStyle={{ fontFamily: "var(--font-body)", fontSize: 12, color: "var(--text-secondary)" }} />
+                  <Legend wrapperStyle={{ fontFamily: "var(--font-body)", fontSize: 12 }} />
                   <Bar dataKey="Cash" stackId="a" fill="#f97316" />
                   <Bar dataKey="Bank" stackId="a" fill="#4f8ef7" radius={[4,4,0,0]} />
                 </BarChart>
@@ -463,18 +468,17 @@ export default function Home() {
         <section className="section">
           <div className="section-header">
             <h2 className="section-title">Key Insights</h2>
-            <p className="section-subtitle">AI-powered summary of your business performance</p>
           </div>
           <div style={{ background: "linear-gradient(135deg, rgba(37,99,235,0.08) 0%, rgba(124,58,237,0.06) 100%)", border: "1px solid rgba(37,99,235,0.12)", borderRadius: 20, padding: 24 }}>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: 12 }}>
               {[
-                { label: "Best Month",        value: insights.best_month },
-                { label: "Top Customer",      value: insights.best_customer },
-                { label: "Best Vehicle",      value: insights.best_vehicle },
-                { label: "Best Route",        value: insights.best_route },
-                { label: "Saturday Trips",    value: insights.sat_trips },
-                { label: "Fuel Cost %",       value: `${insights.fuel_pct}%` },
-                { label: "Digital Payments %",value: `${insights.digital_pct}%` },
+                { label: "Best Month",         value: insights.best_month },
+                { label: "Top Customer",       value: insights.best_customer },
+                { label: "Best Vehicle",       value: insights.best_vehicle },
+                { label: "Best Route",         value: insights.best_route },
+                { label: "Saturday Trips",     value: insights.sat_trips },
+                { label: "Fuel Cost %",        value: `${insights.fuel_pct}%` },
+                { label: "Digital Payments %", value: `${insights.digital_pct}%` },
               ].map((item, i) => (
                 <div key={i} style={{ background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.06)", borderRadius: 12, padding: "14px 16px" }}>
                   <p style={{ fontSize: 11, color: "var(--text-muted)", marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.07em", fontWeight: 600 }}>{item.label}</p>
@@ -487,87 +491,45 @@ export default function Home() {
 
       </div>
 
-            {selectedTrip && (
-  <div
-    onClick={() => setSelectedTrip(null)}
-    style={{
-      position: "fixed",
-      top: 0,
-      left: 0,
-      width: "100vw",
-      height: "100vh",
-      background: "rgba(0,0,0,0.4)",
-      backdropFilter: "blur(6px)",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      zIndex: 999,
-    }}
-  >
-    <div
-      onClick={(e) => e.stopPropagation()}
-      style={{
-        background: "#fff",
-        color: "#111",
-        padding: 24,
-        borderRadius: 16,
-        width: "95%",
-        maxWidth: 700,
-        maxHeight: "90vh",
-        overflowY: "auto",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
-      }}
-    >
-      {/* HEADER */}
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-        <h2 style={{ fontSize: 20, fontWeight: 700 }}>
-          Trip #{selectedTrip["trip id"]}
-        </h2>
-        <button onClick={() => setSelectedTrip(null)}>✕</button>
-      </div>
-
-      {/* CUSTOMER */}
-      <div style={{ marginBottom: 16 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 600 }}>Customer</h3>
-        <p>{selectedTrip["Customer Name"]}</p>
-        <p>{selectedTrip["Cust. Contact Number"]}</p>
-      </div>
-
-      {/* TRIP */}
-      <div style={{ marginBottom: 16 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 600 }}>Trip Details</h3>
-        <p>{selectedTrip["Trip From"]} → {selectedTrip["Trip TO"]}</p>
-        <p>{selectedTrip["Start Date"]} → {selectedTrip["End date"]}</p>
-        <p>{selectedTrip["Vehicle Details"]}</p>
-      </div>
-
-      {/* FINANCIAL */}
-      <div style={{ marginBottom: 16 }}>
-        <h3 style={{ fontSize: 14, fontWeight: 600 }}>Financial</h3>
-        <p>Deal: ₹{(selectedTrip["Deal Price"] || 0).toLocaleString("en-IN")}</p>
-        <p>Received: ₹{(selectedTrip["Received"] || 0).toLocaleString("en-IN")}</p>
-        <p>Pending: ₹{(selectedTrip["Pending"] || 0).toLocaleString("en-IN")}</p>
-      </div>
-
-      {/* 🔥 COST BREAKDOWN */}
-      <div>
-        <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Cost Breakdown</h3>
-
-        <div style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 10
-        }}>
-          <div>Fuel: ₹{(selectedTrip["Fuel"] || 0).toLocaleString("en-IN")}</div>
-          <div>Tolls & Taxes: ₹{(selectedTrip["Tolls & Taxes"] || 0).toLocaleString("en-IN")}</div>
-          <div>Parking: ₹{(selectedTrip["Parking"] || 0).toLocaleString("en-IN")}</div>
-          <div>Driver Allowance: ₹{(selectedTrip["Driver Allowance"] || 0).toLocaleString("en-IN")}</div>
-          <div>Sales Commission: ₹{(selectedTrip["Sales Commission"] || 0).toLocaleString("en-IN")}</div>
+      {/* Trip detail modal */}
+      {selectedTrip && (
+        <div onClick={() => setSelectedTrip(null)} style={{ position: "fixed", top: 0, left: 0, width: "100vw", height: "100vh", background: "rgba(0,0,0,0.4)", backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 999 }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ background: "#fff", color: "#111", padding: 24, borderRadius: 16, width: "95%", maxWidth: 700, maxHeight: "90vh", overflowY: "auto", boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+              <h2 style={{ fontSize: 20, fontWeight: 700 }}>Trip #{selectedTrip["trip id"]}</h2>
+              <button onClick={() => setSelectedTrip(null)}>✕</button>
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600 }}>Customer</h3>
+              <p>{selectedTrip["Customer Name"]}</p>
+              <p>{selectedTrip["Cust. Contact Number"]}</p>
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600 }}>Trip Details</h3>
+              <p>{selectedTrip["Trip From"]} → {selectedTrip["Trip TO"]}</p>
+              <p>{selectedTrip["Start Date"]} → {selectedTrip["End date"]}</p>
+              <p>{selectedTrip["Vehicle Details"]}</p>
+            </div>
+            <div style={{ marginBottom: 16 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600 }}>Financial</h3>
+              <p>Deal: ₹{(selectedTrip["Deal Price"] || 0).toLocaleString("en-IN")}</p>
+              <p>Received: ₹{(selectedTrip["Received"] || 0).toLocaleString("en-IN")}</p>
+              <p>Pending: ₹{(selectedTrip["Pending"] || 0).toLocaleString("en-IN")}</p>
+            </div>
+            <div>
+              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>Cost Breakdown</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                <div>Fuel: ₹{(selectedTrip["Fuel"] || 0).toLocaleString("en-IN")}</div>
+                <div>Tolls & Taxes: ₹{(selectedTrip["Tolls & Taxes"] || 0).toLocaleString("en-IN")}</div>
+                <div>Parking: ₹{(selectedTrip["Parking"] || 0).toLocaleString("en-IN")}</div>
+                <div>Driver Allowance: ₹{(selectedTrip["Driver Allowance"] || 0).toLocaleString("en-IN")}</div>
+                <div>Sales Commission: ₹{(selectedTrip["Sales Commission"] || 0).toLocaleString("en-IN")}</div>
+                <div>Other Expenses: ₹{(selectedTrip["Other Expenses"] || 0).toLocaleString("en-IN")}</div>
+              </div>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
-  </div>
-)}
+      )}
     </div>
   );
 }
