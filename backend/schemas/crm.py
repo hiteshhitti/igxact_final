@@ -93,7 +93,7 @@ class CRMEntryCreate(BaseModel):
             raise ValueError("contact must have at least 6 digits")
         return str(v).strip()
 
-    @root_validator
+    @root_validator(skip_on_failure=True)
     def booked_fields_required(cls, values):
         """If status is Booked, driver_name, trip_from, trip_to are required."""
         if values.get("status") == "Booked":
