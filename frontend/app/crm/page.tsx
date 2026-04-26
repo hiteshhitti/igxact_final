@@ -19,6 +19,12 @@ type CRMEntry = {
   deal_closed_date: string;
   attendant: string;
   vehicle: string;
+  quote_price: string;
+  travel_date: string;
+  return_date: string;
+  driver_name: string;
+  trip_from: string;
+  trip_to: string;
   _is_today?: boolean;
   _is_overdue?: boolean;
 };
@@ -28,39 +34,54 @@ type FollowupGroup = Record<string, CRMEntry[]>;
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const MODE_OPTIONS    = ["Call", "WhatsApp"];
-const STATUS_OPTIONS  = ["Enquiry", "Booked", "Interested", "Super Interested", "Trip Decline", "Cancelled"];
+const STATUS_OPTIONS  = ["Enquiry", "Booked", "Interested", "Super Interested", "Trip Decline", "Cancelled", "Not Interested"];
 const CHANNEL_OPTIONS = ["Meta Ads", "Google Ads"];
 
 const STATUS_PILL: Record<string, string> = {
-  "Enquiry":        "pill-blue",
-  "Booked":         "pill-green",
-  "Interested":     "pill-orange",
-  "Super Interested":"pill-orange",
-  "Trip Decline":   "pill-red",
-  "Cancelled":      "pill-red",
+  "Enquiry":          "pill-blue",
+  "Booked":           "pill-green",
+  "Interested":       "pill-orange",
+  "Super Interested": "pill-orange",
+  "Trip Decline":     "pill-red",
+  "Cancelled":        "pill-red",
+  "Not Interested":   "pill-red",
 };
 
 const EMPTY_FORM = {
   customer_name: "", contact: "", description: "",
   mode: "Call", status: "Enquiry", channel: "Meta Ads",
-  vehicle: "", follow_up_date: "", deal_closed_date: "", attendant: "",
+  vehicle: "", follow_up_date: "", deal_closed_date: "",
+  attendant: "", quote_price: "", travel_date: "", return_date: "",
+  driver_name: "", trip_from: "", trip_to: "",
 };
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
 const today = () => new Date().toISOString().split("T")[0];
+
+// ─── Spinner ──────────────────────────────────────────────────────────────────
 
 const Spinner = () => (
   <div style={{
     width: 32, height: 32, borderRadius: "50%",
-    border: "3px solid rgba(37,99,235,0.15)",
+    border: "3px solid rgba(37,99,235,0.12)",
     borderTopColor: "var(--accent-primary)",
     animation: "spin 0.8s linear infinite",
     margin: "0 auto",
   }} />
 );
 
-// ─── Main Page ────────────────────────────────────────────────────────────────
+// ─── Field label helper ───────────────────────────────────────────────────────
+
+const Label = ({ text, required }: { text: string; required?: boolean }) => (
+  <label style={{
+    fontSize: 11, fontWeight: 700, color: "var(--text-muted)",
+    textTransform: "uppercase", letterSpacing: "0.07em",
+    marginBottom: 5, display: "block",
+  }}>
+    {text} {required && <span style={{ color: "var(--accent-red)" }}>*</span>}
+  </label>
+);
+
+// ════════════════════════════════════════════════════════════════════════════════
 
 export default function CRMPage() {
   const [view, setView] = useState<"table" | "followups">("table");
@@ -77,21 +98,24 @@ export default function CRMPage() {
   const [search, setSearch]               = useState("");
 
   // Modal
-  const [showModal, setShowModal] = useState(false);
-  const [modalMode, setModalMode] = useState<"create" | "edit" | "followup">("create");
-  const [form, setForm]           = useState({ ...EMPTY_FORM });
-  const [editRow, setEditRow]     = useState<number | null>(null);
-  const [saving, setSaving]       = useState(false);
+  const [showModal, setShowModal]   = useState(false);
+  const [modalMode, setModalMode]   = useState<"create" | "edit" | "followup">("create");
+  const [form, setForm]             = useState({ ...EMPTY_FORM });
+  const [editRow, setEditRow]       = useState<number | null>(null);
+  const [saving, setSaving]         = useState(false);
 
   // History
-  const [historyModal, setHistoryModal]   = useState(false);
+  const [historyModal, setHistoryModal]     = useState(false);
   const [historyEntries, setHistoryEntries] = useState<CRMEntry[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
   // Analytics
   const [analytics, setAnalytics] = useState<any>(null);
 
-  // ── Data fetching ────────────────────────────────────────────────────────────
+  // Is current form status "Booked"?
+  const isBooked = form.status === "Booked";
+
+  // ── Fetchers ───────────────────────────────────────────────────────────────
 
   const fetchEntries = useCallback(async () => {
     setLoading(true);
@@ -102,16 +126,12 @@ export default function CRMPage() {
       if (filterStart)   params.append("start", filterStart);
       if (filterEnd)     params.append("end", filterEnd);
       if (search)        params.append("search", search);
-
       const res = await apiFetch(`/crm/entries?${params}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Failed to load CRM data");
+      if (!res.ok) throw new Error(data.detail || "Failed to load");
       setEntries(data.entries || []);
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e: any) { toast.error(e.message); }
+    finally { setLoading(false); }
   }, [filterStatus, filterChannel, filterStart, filterEnd, search]);
 
   const fetchFollowups = useCallback(async () => {
@@ -119,13 +139,10 @@ export default function CRMPage() {
     try {
       const res = await apiFetch("/crm/followups");
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Failed to load follow-ups");
+      if (!res.ok) throw new Error(data.detail || "Failed");
       setFollowupData(data);
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setLoading(false);
-    }
+    } catch (e: any) { toast.error(e.message); }
+    finally { setLoading(false); }
   }, []);
 
   const fetchVehicles = useCallback(async () => {
@@ -133,7 +150,7 @@ export default function CRMPage() {
       const res = await apiFetch("/vehicles");
       const data = await res.json();
       setVehicles(data.vehicles || []);
-    } catch {/* non-critical */}
+    } catch { /* non-critical */ }
   }, []);
 
   const fetchAnalytics = useCallback(async () => {
@@ -141,20 +158,19 @@ export default function CRMPage() {
       const res = await apiFetch("/crm/analytics");
       const data = await res.json();
       if (res.ok) setAnalytics(data);
-    } catch {/* non-critical */}
+    } catch { /* non-critical */ }
   }, []);
 
-  useEffect(() => {
-    fetchVehicles();
-    fetchAnalytics();
-  }, []);
-
+  useEffect(() => { fetchVehicles(); fetchAnalytics(); }, []);
   useEffect(() => {
     if (view === "table") fetchEntries();
     else fetchFollowups();
   }, [view, fetchEntries, fetchFollowups]);
 
-  // ── Modal helpers ─────────────────────────────────────────────────────────
+  // ── Modal helpers ──────────────────────────────────────────────────────────
+
+  const setField = (key: string, val: string) =>
+    setForm(f => ({ ...f, [key]: val }));
 
   const openCreate = () => {
     setForm({ ...EMPTY_FORM });
@@ -163,162 +179,173 @@ export default function CRMPage() {
     setShowModal(true);
   };
 
-  const openEdit = (entry: CRMEntry) => {
+  const openEdit = (e: CRMEntry) => {
     setForm({
-      customer_name: entry.customer_name,
-      contact: entry.contact,
-      description: entry.description,
-      mode: entry.mode || "Call",
-      status: entry.status || "Enquiry",
-      channel: entry.channel || "Meta Ads",
-      vehicle: entry.vehicle || "",
-      follow_up_date: entry.follow_up_date || "",
-      deal_closed_date: entry.deal_closed_date || "",
-      attendant: entry.attendant || "",
+      customer_name: e.customer_name, contact: e.contact,
+      description: e.description, mode: e.mode || "Call",
+      status: e.status || "Enquiry", channel: e.channel || "Meta Ads",
+      vehicle: e.vehicle || "", follow_up_date: e.follow_up_date || "",
+      deal_closed_date: e.deal_closed_date || "", attendant: e.attendant || "",
+      quote_price: e.quote_price || "", travel_date: e.travel_date || "",
+      return_date: e.return_date || "", driver_name: e.driver_name || "",
+      trip_from: e.trip_from || "", trip_to: e.trip_to || "",
     });
-    setEditRow(entry._row);
+    setEditRow(e._row);
     setModalMode("edit");
     setShowModal(true);
   };
 
-  const openFollowup = (entry: CRMEntry) => {
+  const openFollowup = (e: CRMEntry) => {
     setForm({
       ...EMPTY_FORM,
-      customer_name: entry.customer_name,
-      contact: entry.contact,
-      mode: entry.mode || "Call",
+      customer_name: e.customer_name,
+      contact: e.contact,
+      mode: e.mode || "Call",
+      channel: e.channel || "Meta Ads",
       status: "Enquiry",
-      channel: entry.channel || "Meta Ads",
     });
     setEditRow(null);
     setModalMode("followup");
     setShowModal(true);
   };
 
-  const openHistory = async (entry: CRMEntry) => {
+  const openHistory = async (e: CRMEntry) => {
     setHistoryModal(true);
     setHistoryLoading(true);
     try {
-      const params = new URLSearchParams({ contact: entry.contact });
-      const res = await apiFetch(`/crm/history?${params}`);
+      const res = await apiFetch(`/crm/history?contact=${e.contact}`);
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Failed to load history");
+      if (!res.ok) throw new Error(data.detail || "Failed");
       setHistoryEntries(data.history || []);
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setHistoryLoading(false);
-    }
+    } catch (e: any) { toast.error(e.message); }
+    finally { setHistoryLoading(false); }
   };
 
-  // ── Save ──────────────────────────────────────────────────────────────────
+  // ── Save ───────────────────────────────────────────────────────────────────
 
   const handleSave = async () => {
+    // Client-side Booked validation
+    if (form.status === "Booked") {
+      if (!form.driver_name.trim()) return toast.error("Driver name is required when status is Booked");
+      if (!form.trip_from.trim())   return toast.error("Trip From is required when status is Booked");
+      if (!form.trip_to.trim())     return toast.error("Trip To is required when status is Booked");
+    }
     setSaving(true);
     try {
       let res: Response;
       if (modalMode === "edit" && editRow) {
-        res = await apiFetch(`/crm/entries/${editRow}`, {
-          method: "PUT",
-          body: JSON.stringify(form),
-        });
+        res = await apiFetch(`/crm/entries/${editRow}`, { method: "PUT", body: JSON.stringify(form) });
       } else if (modalMode === "followup") {
-        res = await apiFetch("/crm/followups", {
-          method: "POST",
-          body: JSON.stringify(form),
-        });
+        res = await apiFetch("/crm/followups", { method: "POST", body: JSON.stringify(form) });
       } else {
-        res = await apiFetch("/crm/entries", {
-          method: "POST",
-          body: JSON.stringify(form),
-        });
+        res = await apiFetch("/crm/entries", { method: "POST", body: JSON.stringify(form) });
       }
-
       const data = await res.json();
       if (!res.ok) throw new Error(data.detail || "Failed to save");
       toast.success(modalMode === "edit" ? "Entry updated!" : "Entry saved!");
       setShowModal(false);
       fetchAnalytics();
-      if (view === "table") fetchEntries();
-      else fetchFollowups();
-    } catch (e: any) {
-      toast.error(e.message);
-    } finally {
-      setSaving(false);
-    }
+      view === "table" ? fetchEntries() : fetchFollowups();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setSaving(false); }
   };
 
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <>
       <style>{`
-        @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes fadeIn { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes spin    { to { transform: rotate(360deg); } }
+        @keyframes fadeIn  { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
         .crm-fade { animation: fadeIn 0.3s ease; }
+
+        /* ── Modal ─────────────────────────────────────────────────────── */
         .modal-overlay {
-          position:fixed; inset:0; background:rgba(0,0,0,0.45);
-          backdrop-filter:blur(6px); z-index:1000;
-          display:flex; align-items:center; justify-content:center; padding:16px;
+          position:fixed; inset:0;
+          background: rgba(186,210,240,0.30);
+          backdrop-filter: blur(14px) saturate(160%);
+          -webkit-backdrop-filter: blur(14px) saturate(160%);
+          z-index:1000; display:flex; align-items:center; justify-content:center; padding:16px;
         }
         .modal-box {
-          background:var(--bg-elevated); border-radius:var(--radius-lg);
-          border:1px solid var(--border-subtle); box-shadow:0 24px 80px rgba(0,0,0,0.18);
-          width:100%; max-width:560px; max-height:90vh; overflow-y:auto;
-          padding:28px;
+          background: rgba(255,255,255,0.88);
+          backdrop-filter: blur(32px) saturate(200%) brightness(1.05);
+          -webkit-backdrop-filter: blur(32px) saturate(200%) brightness(1.05);
+          border: 1px solid rgba(255,255,255,0.96);
+          border-radius: 28px;
+          box-shadow: 0 24px 80px rgba(100,120,200,0.18), 0 2px 0 rgba(255,255,255,1) inset;
+          width:100%; max-width:620px; max-height:90vh; overflow-y:auto; padding:28px;
         }
-        .crm-tab-bar {
-          display:flex; gap:4px; background:rgba(0,0,0,0.05);
-          border-radius:var(--radius-sm); padding:4px; width:fit-content;
+
+        /* ── Tabs ──────────────────────────────────────────────────────── */
+        .crm-tab-bar { display:flex; gap:4px; background:rgba(255,255,255,0.55); backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.80); border-radius:var(--radius-sm); padding:4px; width:fit-content; }
+        .crm-tab { padding:7px 18px; border-radius:8px; font-size:13px; font-weight:500; border:none; cursor:pointer; background:transparent; color:var(--text-secondary); transition:all 0.2s ease; }
+        .crm-tab.active { background:rgba(255,255,255,0.90); color:var(--text-primary); box-shadow:0 2px 8px rgba(100,120,180,0.12); }
+
+        /* ── Analytics strip ───────────────────────────────────────────── */
+        .analytics-bar { display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px; margin-bottom:24px; }
+        .analytics-chip {
+          background: rgba(255,255,255,0.68); backdrop-filter:blur(16px) saturate(180%);
+          -webkit-backdrop-filter:blur(16px) saturate(180%);
+          border:1px solid rgba(255,255,255,0.82); border-radius:var(--radius-md);
+          padding:14px 16px;
+          box-shadow: 0 2px 0 rgba(255,255,255,0.90) inset, 0 4px 12px rgba(100,120,180,0.10);
+          transition: transform 0.22s ease, box-shadow 0.22s ease;
         }
-        .crm-tab {
-          padding:7px 18px; border-radius:6px; font-size:13px; font-weight:500;
-          border:none; cursor:pointer; background:transparent;
-          color:var(--text-secondary); transition:all 0.2s ease;
-        }
-        .crm-tab.active {
-          background:var(--bg-elevated); color:var(--text-primary);
-          box-shadow:0 1px 4px rgba(0,0,0,0.10);
-        }
-        .followup-group-header {
-          display:flex; align-items:center; gap:10px; margin-bottom:12px;
-        }
+        .analytics-chip:hover { transform:translateY(-2px); box-shadow:0 2px 0 rgba(255,255,255,0.95) inset, 0 8px 24px rgba(100,120,180,0.16); }
+
+        /* ── Follow-up cards ───────────────────────────────────────────── */
         .followup-card {
-          background:var(--bg-card); border:1px solid var(--border-subtle);
-          border-radius:var(--radius-md); padding:16px 18px;
-          margin-bottom:10px; cursor:pointer;
+          background:rgba(255,255,255,0.65); backdrop-filter:blur(16px) saturate(180%);
+          -webkit-backdrop-filter:blur(16px) saturate(180%);
+          border:1px solid rgba(255,255,255,0.82); border-radius:var(--radius-md);
+          padding:16px 18px; margin-bottom:10px; cursor:pointer;
+          box-shadow:0 2px 0 rgba(255,255,255,0.90) inset, 0 4px 12px rgba(100,120,180,0.10);
           transition:all 0.22s ease; position:relative; overflow:hidden;
         }
-        .followup-card::before {
-          content:''; position:absolute; left:0; top:0; bottom:0; width:3px;
-          background:var(--accent-primary); opacity:0; transition:opacity 0.2s;
-        }
-        .followup-card:hover { transform:translateY(-2px); border-color:var(--border-dim); box-shadow:var(--shadow-card); }
+        .followup-card::before { content:''; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--accent-primary); opacity:0; transition:opacity 0.2s; }
+        .followup-card:hover { transform:translateY(-2px); box-shadow:0 2px 0 rgba(255,255,255,0.95) inset, 0 8px 24px rgba(100,120,180,0.16); }
         .followup-card:hover::before { opacity:1; }
-        .followup-card.today { border-color:rgba(37,99,235,0.30); }
-        .followup-card.today::before { opacity:1; background:var(--accent-primary); }
-        .followup-card.overdue { border-color:rgba(220,38,38,0.25); }
+        .followup-card.today   { border-color:rgba(37,99,235,0.28); }
+        .followup-card.today::before { opacity:1; }
+        .followup-card.overdue { border-color:rgba(220,38,38,0.22); }
         .followup-card.overdue::before { opacity:1; background:var(--accent-red); }
-        .analytics-bar {
-          display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:12px;
-          margin-bottom:24px;
-        }
-        .analytics-chip {
-          background:var(--bg-card); border:1px solid var(--border-subtle);
-          border-radius:var(--radius-md); padding:14px 16px;
-        }
+
+        /* ── Form grid ─────────────────────────────────────────────────── */
         .form-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; }
         @media(max-width:560px) { .form-grid { grid-template-columns:1fr; } }
-        .form-label { font-size:11px; font-weight:600; color:var(--text-muted);
-          text-transform:uppercase; letter-spacing:0.07em; margin-bottom:5px; display:block; }
-        .history-row {
-          border-left:2px solid var(--border-dim); padding:10px 0 10px 14px;
-          margin-bottom:8px; position:relative;
+
+        /* ── Booked section ────────────────────────────────────────────── */
+        .booked-section {
+          background: rgba(209,250,229,0.40);
+          backdrop-filter: blur(10px);
+          border: 1px solid rgba(52,211,153,0.30);
+          border-radius: var(--radius-md);
+          padding: 16px 18px;
+          margin-top: 6px;
         }
-        .history-row::before {
-          content:''; position:absolute; left:-5px; top:16px;
-          width:8px; height:8px; border-radius:50%;
-          background:var(--accent-primary); border:2px solid var(--bg-elevated);
+        .booked-section-title {
+          font-size: 12px; font-weight: 700; color: var(--accent-green);
+          text-transform: uppercase; letter-spacing: 0.07em;
+          margin-bottom: 14px; display: flex; align-items: center; gap: 6px;
+        }
+
+        /* ── History ───────────────────────────────────────────────────── */
+        .history-row { border-left:2px solid var(--border-dim); padding:10px 0 10px 14px; margin-bottom:8px; position:relative; }
+        .history-row::before { content:''; position:absolute; left:-5px; top:16px; width:8px; height:8px; border-radius:50%; background:var(--accent-primary); border:2px solid rgba(255,255,255,0.90); }
+
+        /* ── Table wrap ────────────────────────────────────────────────── */
+        .table-glass {
+          background:rgba(255,255,255,0.68); backdrop-filter:blur(20px) saturate(180%);
+          -webkit-backdrop-filter:blur(20px) saturate(180%);
+          border:1px solid rgba(255,255,255,0.82); border-radius:var(--radius-lg);
+          box-shadow:0 2px 0 rgba(255,255,255,0.90) inset, 0 8px 32px rgba(100,120,180,0.12);
+          overflow:hidden;
+        }
+        .empty-glass {
+          background:rgba(255,255,255,0.55); backdrop-filter:blur(12px);
+          border:1px solid rgba(255,255,255,0.80); border-radius:var(--radius-lg);
+          padding:48px; text-align:center; color:var(--text-muted); font-size:14px;
         }
       `}</style>
 
@@ -326,59 +353,59 @@ export default function CRMPage() {
         <Navbar />
         <div className="page-content">
 
-          {/* ── Header ─────────────────────────────────────────────────── */}
+          {/* ── Header ───────────────────────────────────────────────────── */}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:24, flexWrap:"wrap", gap:12 }}>
             <div>
-              <h1 style={{ fontSize:22, marginBottom:4 }}>📋 CRM</h1>
-              <p style={{ fontSize:13, color:"var(--text-muted)" }}>
-                All data synced with Google Sheets
-              </p>
+              <h1 style={{ fontSize:24, marginBottom:4 }}>📋 CRM</h1>
+              <p style={{ fontSize:13, color:"var(--text-muted)" }}>All data synced live with Google Sheets</p>
             </div>
-            <div style={{ display:"flex", gap:10, alignItems:"center" }}>
+            <div style={{ display:"flex", gap:10, alignItems:"center", flexWrap:"wrap" }}>
               <div className="crm-tab-bar">
-                <button className={`crm-tab ${view === "table" ? "active" : ""}`} onClick={() => setView("table")}>All Entries</button>
-                <button className={`crm-tab ${view === "followups" ? "active" : ""}`} onClick={() => setView("followups")}>Follow-Ups</button>
+                <button className={`crm-tab ${view==="table"?"active":""}`} onClick={() => setView("table")}>All Entries</button>
+                <button className={`crm-tab ${view==="followups"?"active":""}`} onClick={() => setView("followups")}>Follow-Ups</button>
               </div>
-              <button className="btn-primary" onClick={openCreate} style={{ fontSize:13 }}>
-                + New Entry
-              </button>
+              <button className="btn-primary" onClick={openCreate} style={{ fontSize:13 }}>+ New Entry</button>
             </div>
           </div>
 
-          {/* ── Analytics strip ────────────────────────────────────────── */}
+          {/* ── Analytics ─────────────────────────────────────────────────── */}
           {analytics && (
             <div className="analytics-bar crm-fade">
               <div className="analytics-chip">
-                <p style={{ fontSize:11, color:"var(--text-muted)", marginBottom:4, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.06em" }}>Total</p>
+                <p style={{ fontSize:11, color:"var(--text-muted)", marginBottom:4, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em" }}>Total</p>
                 <p style={{ fontSize:22, fontWeight:800, fontFamily:"var(--font-display)" }}>{analytics.total}</p>
               </div>
               <div className="analytics-chip">
-                <p style={{ fontSize:11, color:"var(--text-muted)", marginBottom:4, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.06em" }}>Conversion</p>
+                <p style={{ fontSize:11, color:"var(--text-muted)", marginBottom:4, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em" }}>Conversion</p>
                 <p style={{ fontSize:22, fontWeight:800, fontFamily:"var(--font-display)", color:"var(--accent-green)" }}>{analytics.conversion_rate_pct}%</p>
               </div>
               <div className="analytics-chip">
-                <p style={{ fontSize:11, color:"var(--text-muted)", marginBottom:4, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.06em" }}>Follow-Ups</p>
+                <p style={{ fontSize:11, color:"var(--text-muted)", marginBottom:4, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em" }}>Follow-Ups</p>
                 <p style={{ fontSize:22, fontWeight:800, fontFamily:"var(--font-display)", color:"var(--accent-orange)" }}>{analytics.followup_scheduled}</p>
               </div>
               {analytics.channel_counts && Object.entries(analytics.channel_counts as Record<string,number>).map(([ch, cnt]) => (
                 <div className="analytics-chip" key={ch}>
-                  <p style={{ fontSize:11, color:"var(--text-muted)", marginBottom:4, fontWeight:600, textTransform:"uppercase", letterSpacing:"0.06em" }}>{ch}</p>
+                  <p style={{ fontSize:11, color:"var(--text-muted)", marginBottom:4, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em" }}>{ch}</p>
                   <p style={{ fontSize:22, fontWeight:800, fontFamily:"var(--font-display)", color:"var(--accent-purple)" }}>{cnt as number}</p>
                 </div>
               ))}
+              {analytics.status_counts?.["Booked"] !== undefined && (
+                <div className="analytics-chip">
+                  <p style={{ fontSize:11, color:"var(--text-muted)", marginBottom:4, fontWeight:700, textTransform:"uppercase", letterSpacing:"0.06em" }}>Booked</p>
+                  <p style={{ fontSize:22, fontWeight:800, fontFamily:"var(--font-display)", color:"var(--accent-green)" }}>{analytics.status_counts["Booked"]}</p>
+                </div>
+              )}
             </div>
           )}
 
-          {/* ── TABLE VIEW ─────────────────────────────────────────────── */}
+          {/* ════════════════════════════════════════════════════════════════
+              TABLE VIEW
+          ════════════════════════════════════════════════════════════════ */}
           {view === "table" && (
             <div className="crm-fade">
               {/* Filters */}
-              <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginBottom:18 }}>
-                <input
-                  className="input-field" placeholder="🔍 Search name / contact"
-                  value={search} onChange={e => setSearch(e.target.value)}
-                  style={{ width:220, fontSize:13 }}
-                />
+              <div style={{ display:"flex", gap:10, flexWrap:"wrap", marginBottom:16 }}>
+                <input className="input-field" placeholder="🔍 Name / contact" value={search} onChange={e => setSearch(e.target.value)} style={{ width:210, fontSize:13 }} />
                 <select className="input-field" value={filterStatus} onChange={e => setFilterStatus(e.target.value)} style={{ fontSize:13 }}>
                   <option value="">All Statuses</option>
                   {STATUS_OPTIONS.map(s => <option key={s}>{s}</option>)}
@@ -390,20 +417,16 @@ export default function CRMPage() {
                 <input type="date" className="input-field" value={filterStart} onChange={e => setFilterStart(e.target.value)} style={{ fontSize:13 }} />
                 <input type="date" className="input-field" value={filterEnd}   onChange={e => setFilterEnd(e.target.value)}   style={{ fontSize:13 }} />
                 <button className="btn-ghost" onClick={fetchEntries} style={{ fontSize:13 }}>Apply</button>
-                <button className="btn-ghost" onClick={() => {
-                  setFilterStatus(""); setFilterChannel(""); setFilterStart(""); setFilterEnd(""); setSearch("");
-                }} style={{ fontSize:13 }}>Clear</button>
+                <button className="btn-ghost" style={{ fontSize:13 }} onClick={() => { setFilterStatus(""); setFilterChannel(""); setFilterStart(""); setFilterEnd(""); setSearch(""); }}>Clear</button>
               </div>
 
               {/* Table */}
-              <div style={{ background:"var(--bg-card)", border:"1px solid var(--border-subtle)", borderRadius:"var(--radius-lg)", overflow:"hidden" }}>
-                {loading ? (
-                  <div style={{ padding:48, textAlign:"center" }}><Spinner /></div>
-                ) : entries.length === 0 ? (
-                  <div style={{ padding:48, textAlign:"center", color:"var(--text-muted)" }}>
-                    No entries found. Create your first CRM entry.
-                  </div>
-                ) : (
+              {loading ? (
+                <div style={{ padding:48, textAlign:"center" }}><Spinner /></div>
+              ) : entries.length === 0 ? (
+                <div className="empty-glass">No entries found. Create your first CRM entry.</div>
+              ) : (
+                <div className="table-glass">
                   <div style={{ overflowX:"auto" }}>
                     <table className="data-table">
                       <thead>
@@ -414,8 +437,11 @@ export default function CRMPage() {
                           <th>Status</th>
                           <th>Channel</th>
                           <th>Vehicle</th>
+                          <th>Quote</th>
+                          <th>Trip</th>
+                          <th>Driver</th>
+                          <th>Travel Date</th>
                           <th>Follow-Up</th>
-                          <th>Attendant</th>
                           <th>Actions</th>
                         </tr>
                       </thead>
@@ -428,25 +454,45 @@ export default function CRMPage() {
                             </td>
                             <td style={{ fontFamily:"monospace", fontSize:13 }}>{e.contact || "—"}</td>
                             <td>
-                              <span className={`pill ${e.mode === "WhatsApp" ? "pill-green" : "pill-blue"}`} style={{ fontSize:11 }}>
-                                {e.mode === "WhatsApp" ? "💬" : "📞"} {e.mode || "—"}
+                              <span className={`pill ${e.mode==="WhatsApp"?"pill-green":"pill-blue"}`} style={{ fontSize:11 }}>
+                                {e.mode==="WhatsApp"?"💬":"📞"} {e.mode||"—"}
                               </span>
                             </td>
                             <td>
-                              <span className={`pill ${STATUS_PILL[e.status] || "pill-blue"}`} style={{ fontSize:11 }}>
-                                {e.status || "—"}
+                              <span className={`pill ${STATUS_PILL[e.status]||"pill-blue"}`} style={{ fontSize:11 }}>
+                                {e.status==="Booked" ? "✅ " : ""}{e.status||"—"}
                               </span>
                             </td>
-                            <td style={{ fontSize:13 }}>{e.channel || "—"}</td>
-                            <td style={{ fontSize:13, color:"var(--text-muted)" }}>{e.vehicle || "—"}</td>
+                            <td style={{ fontSize:13 }}>{e.channel||"—"}</td>
+                            <td style={{ fontSize:12, color:"var(--text-muted)", maxWidth:120, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{e.vehicle||"—"}</td>
+                            <td style={{ fontSize:13, fontWeight:600, color:"var(--accent-primary)" }}>
+                              {e.quote_price ? `₹${Number(e.quote_price).toLocaleString("en-IN")}` : "—"}
+                            </td>
+                            <td style={{ fontSize:12 }}>
+                              {e.trip_from && e.trip_to ? (
+                                <span style={{ color:"var(--text-primary)" }}>{e.trip_from} → {e.trip_to}</span>
+                              ) : "—"}
+                            </td>
+                            <td style={{ fontSize:13 }}>
+                              {e.driver_name ? (
+                                <span style={{ fontWeight:600, color:"var(--accent-purple)" }}>🧑‍✈️ {e.driver_name}</span>
+                              ) : "—"}
+                            </td>
+                            <td style={{ fontSize:12 }}>
+                              {e.travel_date ? (
+                                <div>
+                                  <div>{e.travel_date}</div>
+                                  {e.return_date && <div style={{ color:"var(--text-muted)" }}>→ {e.return_date}</div>}
+                                </div>
+                              ) : "—"}
+                            </td>
                             <td style={{ fontSize:12 }}>
                               {e.follow_up_date ? (
-                                <span style={{ color: e.follow_up_date === today() ? "var(--accent-primary)" : e.follow_up_date < today() ? "var(--accent-red)" : "var(--text-secondary)" }}>
-                                  {e.follow_up_date === today() ? "🔔 " : e.follow_up_date < today() ? "⚠️ " : ""}{e.follow_up_date}
+                                <span style={{ color: e.follow_up_date===today() ? "var(--accent-primary)" : e.follow_up_date<today() ? "var(--accent-red)" : "var(--text-secondary)" }}>
+                                  {e.follow_up_date===today() ? "🔔 " : e.follow_up_date<today() ? "⚠️ " : ""}{e.follow_up_date}
                                 </span>
                               ) : "—"}
                             </td>
-                            <td style={{ fontSize:13 }}>{e.attendant || "—"}</td>
                             <td>
                               <div style={{ display:"flex", gap:6 }}>
                                 <button className="btn-ghost" style={{ padding:"4px 10px", fontSize:12 }} onClick={() => openEdit(e)}>Edit</button>
@@ -459,67 +505,62 @@ export default function CRMPage() {
                       </tbody>
                     </table>
                   </div>
-                )}
-              </div>
+                </div>
+              )}
               <p style={{ fontSize:12, color:"var(--text-muted)", marginTop:10, textAlign:"right" }}>
-                {entries.length} entries · Powered by Google Sheets
+                {entries.length} entries · Google Sheets
               </p>
             </div>
           )}
 
-          {/* ── FOLLOW-UPS VIEW ─────────────────────────────────────────── */}
+          {/* ════════════════════════════════════════════════════════════════
+              FOLLOW-UPS VIEW
+          ════════════════════════════════════════════════════════════════ */}
           {view === "followups" && (
             <div className="crm-fade">
               {loading ? (
                 <div style={{ padding:48, textAlign:"center" }}><Spinner /></div>
               ) : Object.keys(followupData.grouped).length === 0 ? (
-                <div style={{ padding:48, textAlign:"center", color:"var(--text-muted)" }}>
-                  No follow-ups scheduled. Add follow_up_date to CRM entries.
-                </div>
+                <div className="empty-glass">No follow-ups scheduled.</div>
               ) : (
                 Object.entries(followupData.grouped).map(([dateKey, cards]) => {
-                  const isToday = dateKey === followupData.today;
+                  const isToday   = dateKey === followupData.today;
                   const isOverdue = dateKey < followupData.today;
                   return (
                     <div key={dateKey} style={{ marginBottom:28 }}>
-                      <div className="followup-group-header">
-                        <div style={{
-                          padding:"4px 14px", borderRadius:99,
-                          background: isToday ? "rgba(37,99,235,0.12)" : isOverdue ? "rgba(220,38,38,0.10)" : "rgba(0,0,0,0.06)",
-                          color: isToday ? "var(--accent-primary)" : isOverdue ? "var(--accent-red)" : "var(--text-secondary)",
-                          fontSize:13, fontWeight:600,
-                        }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:10, marginBottom:12 }}>
+                        <div style={{ padding:"4px 14px", borderRadius:99, background: isToday ? "rgba(37,99,235,0.10)" : isOverdue ? "rgba(220,38,38,0.08)" : "rgba(255,255,255,0.55)", backdropFilter:"blur(8px)", border:"1px solid rgba(255,255,255,0.80)", color: isToday ? "var(--accent-primary)" : isOverdue ? "var(--accent-red)" : "var(--text-secondary)", fontSize:13, fontWeight:600 }}>
                           {isToday ? "🔔 Today" : isOverdue ? "⚠️ Overdue" : "📅"} {dateKey}
                         </div>
-                        <span style={{ fontSize:12, color:"var(--text-muted)" }}>{cards.length} follow-up{cards.length !== 1 ? "s" : ""}</span>
+                        <span style={{ fontSize:12, color:"var(--text-muted)" }}>{cards.length} follow-up{cards.length!==1?"s":""}</span>
                       </div>
                       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:12 }}>
                         {(cards as CRMEntry[]).map((c) => (
-                          <div
-                            key={`${c._row}-${c.timestamp}`}
-                            className={`followup-card ${c._is_today ? "today" : ""} ${c._is_overdue ? "overdue" : ""}`}
-                            onClick={() => openFollowup(c)}
-                          >
+                          <div key={`${c._row}-${c.timestamp}`} className={`followup-card ${c._is_today?"today":""} ${c._is_overdue?"overdue":""}`} onClick={() => openFollowup(c)}>
                             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:8 }}>
                               <div>
                                 <p style={{ fontWeight:700, fontSize:14, color:"var(--text-primary)" }}>{c.customer_name}</p>
                                 <p style={{ fontSize:12, color:"var(--text-muted)", fontFamily:"monospace" }}>{c.contact}</p>
                               </div>
-                              <span className={`pill ${STATUS_PILL[c.status] || "pill-blue"}`} style={{ fontSize:10 }}>{c.status}</span>
+                              <span className={`pill ${STATUS_PILL[c.status]||"pill-blue"}`} style={{ fontSize:10 }}>{c.status}</span>
                             </div>
-                            {c.description && (
-                              <p style={{ fontSize:12, color:"var(--text-secondary)", marginBottom:8, lineHeight:1.5 }}>
-                                {c.description.length > 80 ? c.description.slice(0, 80) + "…" : c.description}
+                            {(c.trip_from || c.trip_to) && (
+                              <p style={{ fontSize:12, fontWeight:600, color:"var(--accent-primary)", marginBottom:6 }}>
+                                📍 {c.trip_from} {c.trip_to ? `→ ${c.trip_to}` : ""}
                               </p>
                             )}
-                            <div style={{ display:"flex", gap:8, flexWrap:"wrap" }}>
-                              <span className={`pill ${c.mode === "WhatsApp" ? "pill-green" : "pill-blue"}`} style={{ fontSize:10 }}>{c.mode}</span>
+                            {c.description && (
+                              <p style={{ fontSize:12, color:"var(--text-secondary)", marginBottom:8, lineHeight:1.5 }}>
+                                {c.description.length>80 ? c.description.slice(0,80)+"…" : c.description}
+                              </p>
+                            )}
+                            <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                              <span className={`pill ${c.mode==="WhatsApp"?"pill-green":"pill-blue"}`} style={{ fontSize:10 }}>{c.mode}</span>
                               <span className="pill pill-orange" style={{ fontSize:10 }}>{c.channel}</span>
                               {c.vehicle && <span className="pill pill-blue" style={{ fontSize:10 }}>{c.vehicle}</span>}
+                              {c.driver_name && <span className="pill pill-green" style={{ fontSize:10 }}>🧑‍✈️ {c.driver_name}</span>}
                             </div>
-                            <p style={{ fontSize:11, color:"var(--text-muted)", marginTop:8 }}>
-                              Click to log a follow-up interaction →
-                            </p>
+                            <p style={{ fontSize:11, color:"var(--text-muted)", marginTop:8 }}>Tap to log follow-up →</p>
                           </div>
                         ))}
                       </div>
@@ -532,117 +573,161 @@ export default function CRMPage() {
         </div>
       </div>
 
-      {/* ── Entry Modal ─────────────────────────────────────────────────────── */}
+      {/* ════════════════════════════════════════════════════════════════════
+          ENTRY MODAL
+      ════════════════════════════════════════════════════════════════════ */}
       {showModal && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowModal(false); }}>
+        <div className="modal-overlay" onClick={e => { if (e.target===e.currentTarget) setShowModal(false); }}>
           <div className="modal-box crm-fade">
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-              <h2 style={{ fontSize:17 }}>
-                {modalMode === "edit" ? "✏️ Edit Entry" : modalMode === "followup" ? "🔁 Log Follow-Up" : "➕ New CRM Entry"}
+              <h2 style={{ fontSize:18 }}>
+                {modalMode==="edit" ? "✏️ Edit Entry" : modalMode==="followup" ? "🔁 Log Follow-Up" : "➕ New CRM Entry"}
               </h2>
               <button className="btn-ghost" style={{ padding:"4px 10px", fontSize:13 }} onClick={() => setShowModal(false)}>✕</button>
             </div>
 
-            {modalMode === "followup" && (
-              <div style={{ background:"rgba(37,99,235,0.06)", border:"1px solid rgba(37,99,235,0.15)", borderRadius:"var(--radius-sm)", padding:"10px 14px", marginBottom:16, fontSize:13, color:"var(--text-secondary)" }}>
-                Creating a <strong>new row</strong> for this customer — their full history is preserved.
+            {modalMode==="followup" && (
+              <div style={{ background:"rgba(191,219,254,0.35)", border:"1px solid rgba(96,165,250,0.28)", borderRadius:12, padding:"10px 14px", marginBottom:16, fontSize:13, color:"var(--text-secondary)" }}>
+                Creating a <strong>new row</strong> — full history preserved.
               </div>
             )}
 
             <div className="form-grid">
-              <div style={{ gridColumn: modalMode === "followup" ? "1/-1" : undefined }}>
-                <label className="form-label">Customer Name *</label>
-                <input className="input-field" style={{ width:"100%", fontSize:13 }}
-                  value={form.customer_name}
-                  onChange={e => setForm(f => ({ ...f, customer_name: e.target.value }))}
-                  readOnly={modalMode === "followup"}
-                />
+              {/* Customer Name */}
+              <div style={{ gridColumn: modalMode==="followup" ? "1/-1" : undefined }}>
+                <Label text="Customer Name" required />
+                <input className="input-field" style={{ fontSize:13 }} value={form.customer_name} onChange={e => setField("customer_name", e.target.value)} readOnly={modalMode==="followup"} />
               </div>
+
+              {/* Contact */}
               <div>
-                <label className="form-label">Contact *</label>
-                <input className="input-field" style={{ width:"100%", fontSize:13 }}
-                  value={form.contact}
-                  onChange={e => setForm(f => ({ ...f, contact: e.target.value }))}
-                  readOnly={modalMode === "followup"}
-                />
+                <Label text="Contact" required />
+                <input className="input-field" style={{ fontSize:13 }} value={form.contact} onChange={e => setField("contact", e.target.value)} readOnly={modalMode==="followup"} />
               </div>
+
+              {/* Mode */}
               <div>
-                <label className="form-label">Mode *</label>
-                <select className="input-field" style={{ width:"100%", fontSize:13 }}
-                  value={form.mode} onChange={e => setForm(f => ({ ...f, mode: e.target.value }))}>
+                <Label text="Mode" required />
+                <select className="input-field" style={{ fontSize:13 }} value={form.mode} onChange={e => setField("mode", e.target.value)}>
                   {MODE_OPTIONS.map(o => <option key={o}>{o}</option>)}
                 </select>
               </div>
+
+              {/* Status */}
               <div>
-                <label className="form-label">Status *</label>
-                <select className="input-field" style={{ width:"100%", fontSize:13 }}
-                  value={form.status} onChange={e => setForm(f => ({ ...f, status: e.target.value }))}>
+                <Label text="Status" required />
+                <select className="input-field" style={{ fontSize:13 }} value={form.status} onChange={e => setField("status", e.target.value)}>
                   {STATUS_OPTIONS.map(o => <option key={o}>{o}</option>)}
                 </select>
               </div>
+
+              {/* Channel */}
               <div>
-                <label className="form-label">Channel *</label>
-                <select className="input-field" style={{ width:"100%", fontSize:13 }}
-                  value={form.channel} onChange={e => setForm(f => ({ ...f, channel: e.target.value }))}>
+                <Label text="Channel" required />
+                <select className="input-field" style={{ fontSize:13 }} value={form.channel} onChange={e => setField("channel", e.target.value)}>
                   {CHANNEL_OPTIONS.map(o => <option key={o}>{o}</option>)}
                 </select>
               </div>
+
+              {/* Vehicle */}
               <div>
-                <label className="form-label">Vehicle</label>
-                <select className="input-field" style={{ width:"100%", fontSize:13 }}
-                  value={form.vehicle} onChange={e => setForm(f => ({ ...f, vehicle: e.target.value }))}>
+                <Label text="Vehicle" />
+                <select className="input-field" style={{ fontSize:13 }} value={form.vehicle} onChange={e => setField("vehicle", e.target.value)}>
                   <option value="">— None —</option>
                   {vehicles.map(v => <option key={v}>{v}</option>)}
                 </select>
               </div>
+
+              {/* Quote Price */}
               <div>
-                <label className="form-label">Follow-Up Date</label>
-                <input type="date" className="input-field" style={{ width:"100%", fontSize:13 }}
-                  value={form.follow_up_date}
-                  onChange={e => setForm(f => ({ ...f, follow_up_date: e.target.value }))}
-                />
+                <Label text="Quote Price (₹)" />
+                <input type="number" className="input-field" style={{ fontSize:13 }} value={form.quote_price} onChange={e => setField("quote_price", e.target.value)} placeholder="e.g. 45000" />
               </div>
+
+              {/* Attendant */}
               <div>
-                <label className="form-label">Deal Closed Date</label>
-                <input type="date" className="input-field" style={{ width:"100%", fontSize:13 }}
-                  value={form.deal_closed_date}
-                  onChange={e => setForm(f => ({ ...f, deal_closed_date: e.target.value }))}
-                />
+                <Label text="Attendant" />
+                <input className="input-field" style={{ fontSize:13 }} value={form.attendant} onChange={e => setField("attendant", e.target.value)} placeholder="Staff name" />
               </div>
+
+              {/* Follow-up Date */}
               <div>
-                <label className="form-label">Attendant</label>
-                <input className="input-field" style={{ width:"100%", fontSize:13 }}
-                  value={form.attendant}
-                  onChange={e => setForm(f => ({ ...f, attendant: e.target.value }))}
-                  placeholder="Staff name"
-                />
+                <Label text="Follow-Up Date" />
+                <input type="date" className="input-field" style={{ fontSize:13 }} value={form.follow_up_date} onChange={e => setField("follow_up_date", e.target.value)} />
               </div>
+
+              {/* Deal Closed Date */}
+              <div>
+                <Label text="Deal Closed Date" />
+                <input type="date" className="input-field" style={{ fontSize:13 }} value={form.deal_closed_date} onChange={e => setField("deal_closed_date", e.target.value)} />
+              </div>
+
+              {/* Description */}
               <div style={{ gridColumn:"1/-1" }}>
-                <label className="form-label">Description / Notes</label>
-                <textarea className="input-field" style={{ width:"100%", fontSize:13, minHeight:80, resize:"vertical" }}
-                  value={form.description}
-                  onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                  placeholder="Customer notes, requirements, objections…"
-                />
+                <Label text="Notes / Description" />
+                <textarea className="input-field" style={{ fontSize:13, minHeight:70, resize:"vertical" }} value={form.description} onChange={e => setField("description", e.target.value)} placeholder="Customer notes, requirements…" />
               </div>
             </div>
 
-            <div style={{ display:"flex", gap:10, marginTop:20, justifyContent:"flex-end" }}>
+            {/* ── BOOKED-ONLY SECTION ──────────────────────────────────── */}
+            {isBooked && (
+              <div className="booked-section crm-fade">
+                <div className="booked-section-title">
+                  ✅ Booking Details
+                  <span style={{ fontSize:10, fontWeight:400, color:"var(--text-muted)", textTransform:"none", letterSpacing:0 }}>— required when status is Booked</span>
+                </div>
+                <div className="form-grid">
+                  {/* Trip From */}
+                  <div>
+                    <Label text="Trip From" required />
+                    <input className="input-field" style={{ fontSize:13 }} value={form.trip_from} onChange={e => setField("trip_from", e.target.value)} placeholder="e.g. Chandigarh" />
+                  </div>
+
+                  {/* Trip To */}
+                  <div>
+                    <Label text="Trip To" required />
+                    <input className="input-field" style={{ fontSize:13 }} value={form.trip_to} onChange={e => setField("trip_to", e.target.value)} placeholder="e.g. Manali" />
+                  </div>
+
+                  {/* Driver Name */}
+                  <div>
+                    <Label text="Driver Name" required />
+                    <input className="input-field" style={{ fontSize:13 }} value={form.driver_name} onChange={e => setField("driver_name", e.target.value)} placeholder="Assigned driver" />
+                  </div>
+
+                  {/* Travel Date */}
+                  <div>
+                    <Label text="Travel Date" />
+                    <input type="date" className="input-field" style={{ fontSize:13 }} value={form.travel_date} onChange={e => setField("travel_date", e.target.value)} />
+                  </div>
+
+                  {/* Return Date */}
+                  <div>
+                    <Label text="Return Date" />
+                    <input type="date" className="input-field" style={{ fontSize:13 }} value={form.return_date} onChange={e => setField("return_date", e.target.value)} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div style={{ display:"flex", gap:10, marginTop:22, justifyContent:"flex-end" }}>
               <button className="btn-ghost" onClick={() => setShowModal(false)} disabled={saving} style={{ fontSize:13 }}>Cancel</button>
               <button className="btn-primary" onClick={handleSave} disabled={saving} style={{ fontSize:13 }}>
-                {saving ? "Saving…" : modalMode === "edit" ? "Update Entry" : "Save Entry"}
+                {saving ? "Saving…" : modalMode==="edit" ? "Update Entry" : "Save Entry"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ── History Modal ──────────────────────────────────────────────────── */}
+      {/* ════════════════════════════════════════════════════════════════════
+          HISTORY MODAL
+      ════════════════════════════════════════════════════════════════════ */}
       {historyModal && (
-        <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) setHistoryModal(false); }}>
+        <div className="modal-overlay" onClick={e => { if (e.target===e.currentTarget) setHistoryModal(false); }}>
           <div className="modal-box crm-fade" style={{ maxWidth:640 }}>
             <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
-              <h2 style={{ fontSize:17 }}>🕐 Customer Interaction History</h2>
+              <h2 style={{ fontSize:18 }}>🕐 Customer Timeline</h2>
               <button className="btn-ghost" style={{ padding:"4px 10px", fontSize:13 }} onClick={() => setHistoryModal(false)}>✕</button>
             </div>
             {historyLoading ? (
@@ -655,20 +740,31 @@ export default function CRMPage() {
                   <div key={i} className="history-row">
                     <div style={{ display:"flex", justifyContent:"space-between", flexWrap:"wrap", gap:6, marginBottom:4 }}>
                       <span style={{ fontSize:12, color:"var(--text-muted)" }}>{h.timestamp}</span>
-                      <div style={{ display:"flex", gap:6 }}>
-                        <span className={`pill ${STATUS_PILL[h.status] || "pill-blue"}`} style={{ fontSize:10 }}>{h.status}</span>
-                        <span className={`pill ${h.mode === "WhatsApp" ? "pill-green" : "pill-blue"}`} style={{ fontSize:10 }}>{h.mode}</span>
+                      <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                        <span className={`pill ${STATUS_PILL[h.status]||"pill-blue"}`} style={{ fontSize:10 }}>{h.status}</span>
+                        <span className={`pill ${h.mode==="WhatsApp"?"pill-green":"pill-blue"}`} style={{ fontSize:10 }}>{h.mode}</span>
                         <span className="pill pill-orange" style={{ fontSize:10 }}>{h.channel}</span>
                       </div>
                     </div>
+                    {(h.trip_from || h.trip_to) && (
+                      <p style={{ fontSize:13, fontWeight:600, color:"var(--accent-primary)", marginBottom:4 }}>
+                        📍 {h.trip_from} {h.trip_to ? `→ ${h.trip_to}` : ""}
+                      </p>
+                    )}
+                    {h.driver_name && (
+                      <p style={{ fontSize:12, color:"var(--accent-purple)", marginBottom:4 }}>🧑‍✈️ Driver: {h.driver_name}</p>
+                    )}
+                    {h.quote_price && (
+                      <p style={{ fontSize:12, color:"var(--accent-primary)", marginBottom:4 }}>💰 Quote: ₹{Number(h.quote_price).toLocaleString("en-IN")}</p>
+                    )}
                     {h.description && (
                       <p style={{ fontSize:13, color:"var(--text-secondary)", lineHeight:1.5 }}>{h.description}</p>
                     )}
                     {h.follow_up_date && (
                       <p style={{ fontSize:11, color:"var(--text-muted)", marginTop:4 }}>📅 Follow-up: {h.follow_up_date}</p>
                     )}
-                    {h.attendant && (
-                      <p style={{ fontSize:11, color:"var(--text-muted)" }}>👤 {h.attendant}</p>
+                    {h.travel_date && (
+                      <p style={{ fontSize:11, color:"var(--text-muted)" }}>🗓️ Travel: {h.travel_date}{h.return_date ? ` → ${h.return_date}` : ""}</p>
                     )}
                   </div>
                 ))}

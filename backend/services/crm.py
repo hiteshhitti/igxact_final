@@ -78,6 +78,12 @@ CRM_COLUMNS = [
     "deal_closed_date",
     "attendant",
     "vehicle",
+    "quote_price",
+    "travel_date",
+    "return_date",
+    "driver_name",
+    "trip_from",
+    "trip_to",
 ]
 
 
