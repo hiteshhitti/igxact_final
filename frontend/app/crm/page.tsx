@@ -19,6 +19,8 @@ type CRMEntry = {
   deal_closed_date: string;
   attendant: string;
   vehicle: string;
+  _is_today?: boolean;
+  _is_overdue?: boolean;
 };
 
 type FollowupGroup = Record<string, CRMEntry[]>;
