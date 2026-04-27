@@ -190,6 +190,14 @@ def _auto_create_trip_if_booked(entry: dict) -> None:
     if entry.get("status", "").strip() != "Booked":
         return
 
+    def _to_sheet_date(d: str) -> str:
+        """Convert YYYY-MM-DD (HTML date input) → MM/DD/YYYY (sheet format)."""
+        try:
+            from datetime import datetime
+            return datetime.strptime(d.strip(), "%Y-%m-%d").strftime("%m/%d/%Y")
+        except Exception:
+            return d  # pass through unchanged if already in correct format or empty
+
     try:
         from services.trips import add_trip
         trip_data = {
@@ -197,8 +205,8 @@ def _auto_create_trip_if_booked(entry: dict) -> None:
             "Cust. Contact Number":       entry.get("contact", ""),
             "Trip From":                  entry.get("trip_from", ""),
             "Trip TO":                    entry.get("trip_to", ""),
-            "Start Date":                 entry.get("travel_date", ""),
-            "End date":                   entry.get("return_date", ""),
+            "Start Date":                 _to_sheet_date(entry.get("travel_date", "")),
+            "End date":                   _to_sheet_date(entry.get("return_date", "")),
             "Vehicle Details":            entry.get("vehicle", ""),
             "Driver":                     entry.get("driver_name", ""),
             "Deal Price":                 entry.get("quote_price", ""),
