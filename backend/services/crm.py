@@ -175,10 +175,42 @@ def get_all_crm_entries(use_cache: bool = True) -> list[dict]:
 
 # ── Write ──────────────────────────────────────────────────────────────────────
 
+def _auto_create_trip_if_booked(entry: dict) -> None:
+    """
+    When a CRM entry has status == 'Booked', automatically append
+    a matching row to the main Trips sheet.
+    Maps CRM fields → Trips sheet column names.
+    Non-critical: logs errors but never raises so CRM save is unaffected.
+    """
+    if entry.get("status", "").strip() != "Booked":
+        return
+
+    try:
+        from services.trips import add_trip
+        trip_data = {
+            "Customer Name":        entry.get("customer_name", ""),
+            "Cust. Contact Number": entry.get("contact", ""),
+            "Trip From":            entry.get("trip_from", ""),
+            "Trip TO":              entry.get("trip_to", ""),
+            "Start Date":           entry.get("travel_date", ""),
+            "End date":             entry.get("return_date", ""),
+            "Vehicle Details":      entry.get("vehicle", ""),
+            "Driver":               entry.get("driver_name", ""),
+            "Deal Price":           entry.get("quote_price", ""),
+            "Status":               "Booked",
+            "Lead Source":          entry.get("channel", ""),
+            "Notes":                entry.get("description", ""),
+        }
+        result = add_trip(trip_data)
+        logger.info(f"Auto-created trip #{result.get('trip_id')} from CRM booking for {entry.get('customer_name')}")
+    except Exception as e:
+        logger.error(f"Auto-create trip failed (non-critical): {e}")
+
+
 def create_crm_entry(entry: dict) -> dict:
     """
     Append a new CRM row to Google Sheets.
-    entry must be a plain dict with CRM_COLUMNS keys.
+    If status == 'Booked', also auto-creates a matching Trips row.
     """
     entry["timestamp"] = _now_ts()
     row = _entry_to_row(entry)
@@ -192,7 +224,12 @@ def create_crm_entry(entry: dict) -> dict:
 
     _invalidate_cache()
     logger.info(f"CRM entry created for customer: {entry.get('customer_name')}")
-    return {"msg": "CRM entry created", "timestamp": entry["timestamp"]}
+
+    # Auto-create trip if Booked
+    _auto_create_trip_if_booked(entry)
+
+    trip_msg = " Trip entry also created automatically." if entry.get("status") == "Booked" else ""
+    return {"msg": f"CRM entry created.{trip_msg}", "timestamp": entry["timestamp"]}
 
 
 def update_crm_entry(row_number: int, entry: dict) -> dict:
@@ -218,7 +255,12 @@ def update_crm_entry(row_number: int, entry: dict) -> dict:
 
     _invalidate_cache()
     logger.info(f"CRM entry updated at row {row_number}")
-    return {"msg": "CRM entry updated", "row": row_number}
+
+    # Auto-create trip if status changed to Booked
+    _auto_create_trip_if_booked(entry)
+
+    trip_msg = " Trip entry also created automatically." if entry.get("status") == "Booked" else ""
+    return {"msg": f"CRM entry updated.{trip_msg}", "row": row_number}
 
 
 # ── Query helpers ──────────────────────────────────────────────────────────────
