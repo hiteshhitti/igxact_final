@@ -25,6 +25,12 @@ type CRMEntry = {
   driver_name: string;
   trip_from: string;
   trip_to: string;
+  // Trip financials (only when Booked)
+  advance_cash: string;
+  advance_bank: string;
+  total_cash: string;
+  total_bank: string;
+  number_of_days: string;
   _is_today?: boolean;
   _is_overdue?: boolean;
 };
@@ -53,6 +59,9 @@ const EMPTY_FORM = {
   vehicle: "", follow_up_date: "", deal_closed_date: "",
   attendant: "", quote_price: "", travel_date: "", return_date: "",
   driver_name: "", trip_from: "", trip_to: "",
+  advance_cash: "", advance_bank: "",
+  total_cash: "", total_bank: "",
+  number_of_days: "",
 };
 
 const today = () => new Date().toISOString().split("T")[0];
@@ -189,6 +198,9 @@ export default function CRMPage() {
       quote_price: e.quote_price || "", travel_date: e.travel_date || "",
       return_date: e.return_date || "", driver_name: e.driver_name || "",
       trip_from: e.trip_from || "", trip_to: e.trip_to || "",
+      advance_cash: e.advance_cash || "",
+      advance_bank: e.advance_bank || "", total_cash: e.total_cash || "",
+      total_bank: e.total_bank || "", number_of_days: e.number_of_days || "",
     });
     setEditRow(e._row);
     setModalMode("edit");
@@ -676,37 +688,94 @@ export default function CRMPage() {
                   ✅ Booking Details
                   <span style={{ fontSize:10, fontWeight:400, color:"var(--text-muted)", textTransform:"none", letterSpacing:0 }}>— required when status is Booked</span>
                 </div>
-                <div className="form-grid">
-                  {/* Trip From */}
+
+                {/* Row 1 — Trip route + driver */}
+                <div className="form-grid" style={{ marginBottom:14 }}>
                   <div>
                     <Label text="Trip From" required />
                     <input className="input-field" style={{ fontSize:13 }} value={form.trip_from} onChange={e => setField("trip_from", e.target.value)} placeholder="e.g. Chandigarh" />
                   </div>
-
-                  {/* Trip To */}
                   <div>
                     <Label text="Trip To" required />
                     <input className="input-field" style={{ fontSize:13 }} value={form.trip_to} onChange={e => setField("trip_to", e.target.value)} placeholder="e.g. Manali" />
                   </div>
-
-                  {/* Driver Name */}
                   <div>
                     <Label text="Driver Name" required />
                     <input className="input-field" style={{ fontSize:13 }} value={form.driver_name} onChange={e => setField("driver_name", e.target.value)} placeholder="Assigned driver" />
                   </div>
-
-                  {/* Travel Date */}
+                  <div>
+                    <Label text="Number of Days" />
+                    <input type="number" className="input-field" style={{ fontSize:13 }} value={form.number_of_days} onChange={e => setField("number_of_days", e.target.value)} placeholder="Auto-calculated" />
+                  </div>
                   <div>
                     <Label text="Travel Date" />
-                    <input type="date" className="input-field" style={{ fontSize:13 }} value={form.travel_date} onChange={e => setField("travel_date", e.target.value)} />
+                    <input type="date" className="input-field" style={{ fontSize:13 }} value={form.travel_date}
+                      onChange={e => {
+                        setField("travel_date", e.target.value);
+                        // Auto-calc days
+                        if (form.return_date) {
+                          const d = Math.round((new Date(form.return_date).getTime() - new Date(e.target.value).getTime()) / 86400000) + 1;
+                          if (d > 0) setField("number_of_days", String(d));
+                        }
+                      }}
+                    />
                   </div>
-
-                  {/* Return Date */}
                   <div>
                     <Label text="Return Date" />
-                    <input type="date" className="input-field" style={{ fontSize:13 }} value={form.return_date} onChange={e => setField("return_date", e.target.value)} />
+                    <input type="date" className="input-field" style={{ fontSize:13 }} value={form.return_date}
+                      onChange={e => {
+                        setField("return_date", e.target.value);
+                        if (form.travel_date) {
+                          const d = Math.round((new Date(e.target.value).getTime() - new Date(form.travel_date).getTime()) / 86400000) + 1;
+                          if (d > 0) setField("number_of_days", String(d));
+                        }
+                      }}
+                    />
                   </div>
                 </div>
+
+                {/* Divider */}
+                <div style={{ borderTop:"1px solid rgba(52,211,153,0.20)", margin:"4px 0 14px" }} />
+                <p style={{ fontSize:11, fontWeight:700, color:"var(--accent-green)", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:12 }}>💰 Deal &amp; Payment</p>
+
+                {/* Deal Price + Payments */}
+                <div className="form-grid" style={{ marginBottom:14 }}>
+                  <div>
+                    <Label text="Deal Price (₹)" required />
+                    <input type="number" className="input-field" style={{ fontSize:13 }} value={form.quote_price} onChange={e => setField("quote_price", e.target.value)} placeholder="0" />
+                  </div>
+                  <div>
+                    <Label text="Advance Cash (₹)" />
+                    <input type="number" className="input-field" style={{ fontSize:13 }} value={form.advance_cash} onChange={e => setField("advance_cash", e.target.value)} placeholder="0" />
+                  </div>
+                  <div>
+                    <Label text="Advance Bank (₹)" />
+                    <input type="number" className="input-field" style={{ fontSize:13 }} value={form.advance_bank} onChange={e => setField("advance_bank", e.target.value)} placeholder="0" />
+                  </div>
+                  <div>
+                    <Label text="Total Cash (₹)" />
+                    <input type="number" className="input-field" style={{ fontSize:13 }} value={form.total_cash} onChange={e => setField("total_cash", e.target.value)} placeholder="0" />
+                  </div>
+                  <div>
+                    <Label text="Total Bank (₹)" />
+                    <input type="number" className="input-field" style={{ fontSize:13 }} value={form.total_bank} onChange={e => setField("total_bank", e.target.value)} placeholder="0" />
+                  </div>
+                </div>
+
+                {/* Live payment summary */}
+                {(() => {
+                  const deal = Number(form.quote_price) || 0;
+                  const received = (Number(form.advance_cash)||0) + (Number(form.advance_bank)||0);
+                  const pending = deal - received;
+                  if (!deal) return null;
+                  return (
+                    <div style={{ background:"rgba(255,255,255,0.60)", border:"1px solid rgba(52,211,153,0.25)", borderRadius:10, padding:"12px 16px", display:"flex", gap:20, flexWrap:"wrap", fontSize:13, marginTop:4 }}>
+                      <span>Deal: <strong style={{ color:"var(--accent-primary)" }}>₹{deal.toLocaleString("en-IN")}</strong></span>
+                      <span>Received: <strong style={{ color:"var(--accent-green)" }}>₹{received.toLocaleString("en-IN")}</strong></span>
+                      <span>Pending: <strong style={{ color: pending>0 ? "var(--accent-orange)" : "var(--accent-green)" }}>₹{pending.toLocaleString("en-IN")}</strong></span>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 

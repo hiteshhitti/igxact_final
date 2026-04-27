@@ -55,6 +55,12 @@ class CRMEntryCreate(BaseModel):
     driver_name:      Optional[str] = Field(None, max_length=80)
     trip_from:        Optional[str] = Field(None, max_length=120)
     trip_to:          Optional[str] = Field(None, max_length=120)
+    # ── Trip financials (shown when Booked) ─────────────────────────────────
+    advance_cash:     Optional[str] = Field(None, max_length=20)
+    advance_bank:     Optional[str] = Field(None, max_length=20)
+    total_cash:       Optional[str] = Field(None, max_length=20)
+    total_bank:       Optional[str] = Field(None, max_length=20)
+    number_of_days:   Optional[str] = Field(None, max_length=10)
 
     @validator("mode", pre=True)
     def validate_mode(cls, v):

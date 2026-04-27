@@ -84,6 +84,11 @@ CRM_COLUMNS = [
     "driver_name",
     "trip_from",
     "trip_to",
+    "advance_cash",
+    "advance_bank",
+    "total_cash",
+    "total_bank",
+    "number_of_days",
 ]
 
 
@@ -188,18 +193,23 @@ def _auto_create_trip_if_booked(entry: dict) -> None:
     try:
         from services.trips import add_trip
         trip_data = {
-            "Customer Name":        entry.get("customer_name", ""),
-            "Cust. Contact Number": entry.get("contact", ""),
-            "Trip From":            entry.get("trip_from", ""),
-            "Trip TO":              entry.get("trip_to", ""),
-            "Start Date":           entry.get("travel_date", ""),
-            "End date":             entry.get("return_date", ""),
-            "Vehicle Details":      entry.get("vehicle", ""),
-            "Driver":               entry.get("driver_name", ""),
-            "Deal Price":           entry.get("quote_price", ""),
-            "Status":               "Booked",
-            "Lead Source":          entry.get("channel", ""),
-            "Notes":                entry.get("description", ""),
+            "Customer Name":              entry.get("customer_name", ""),
+            "Cust. Contact Number":       entry.get("contact", ""),
+            "Trip From":                  entry.get("trip_from", ""),
+            "Trip TO":                    entry.get("trip_to", ""),
+            "Start Date":                 entry.get("travel_date", ""),
+            "End date":                   entry.get("return_date", ""),
+            "Vehicle Details":            entry.get("vehicle", ""),
+            "Driver":                     entry.get("driver_name", ""),
+            "Deal Price":                 entry.get("quote_price", ""),
+            "Status":                     "Booked",
+            "Lead Source":                entry.get("channel", ""),
+            "Notes":                      entry.get("description", ""),
+            "Number of Days":             entry.get("number_of_days", ""),
+            "Booking Amt/Advance Cash":   entry.get("advance_cash", ""),
+            "Booking Amt/Advance Bank":   entry.get("advance_bank", ""),
+            "Total Cash":                 entry.get("total_cash", ""),
+            "Total Bank":                 entry.get("total_bank", ""),
         }
         result = add_trip(trip_data)
         logger.info(f"Auto-created trip #{result.get('trip_id')} from CRM booking for {entry.get('customer_name')}")
