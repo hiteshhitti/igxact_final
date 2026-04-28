@@ -53,17 +53,7 @@ export default function TripsPage() {
   const [vehicles, setVehicles]   = useState<string[]>([]);
   const [tripId, setTripId]       = useState("");
   const [mobile, setMobile]       = useState("");
-  const [role, setRole]           = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<string | null>(null);
-
-  // ── Auth guard ────────────────────────────────────────────────────────────
-  useEffect(() => {
-    const storedRole = sessionStorage.getItem("role");
-    if (!storedRole) { window.location.href = "/login"; return; }
-    const cleanRole = storedRole.trim().toLowerCase();
-    if (cleanRole !== "admin") { window.location.href = "/"; return; }
-    setRole(cleanRole);
-  }, []);
 
   // ── Load columns ──────────────────────────────────────────────────────────
   useEffect(() => {
