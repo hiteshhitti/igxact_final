@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
+import { useRoleGuard } from "@/lib/useRoleGuard";
 
 const datePickerStyles = `
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -38,6 +39,8 @@ function validateForm(form: any): string | null {
 }
 
 export default function TripsPage() {
+  const role = useRoleGuard(["admin", "staff"]);
+  if (!role) return null;
   const [trips, setTrips]         = useState<any[]>([]);
   const [columns, setColumns]     = useState<string[]>([]);
   const [form, setForm]           = useState<any>({});

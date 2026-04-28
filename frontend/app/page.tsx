@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useSmoothRouter } from "@/components/UseSmoothRouter";
 import {
+import { useRoleGuard } from "@/lib/useRoleGuard";
   BarChart, Bar, XAxis, YAxis, Tooltip, Legend, Line,
   ResponsiveContainer, LabelList, PieChart, Pie, Cell
 } from "recharts";
@@ -113,6 +114,8 @@ const GlassTooltip = ({ active, payload, label }: any) => {
 
 /* ════════════════════════════════════════════════════════════════════════════ */
 export default function Home() {
+  const role = useRoleGuard(null);
+  if (!role) return null;
   const [year, setYear]             = useState<number | null>(null);
   const [years, setYears]           = useState<number[]>([]);
   const [data, setData]             = useState<any>(null);

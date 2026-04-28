@@ -190,14 +190,6 @@ def _auto_create_trip_if_booked(entry: dict) -> None:
     if entry.get("status", "").strip() != "Booked":
         return
 
-    def _to_sheet_date(d: str) -> str:
-        """Convert YYYY-MM-DD (HTML date input) → MM/DD/YYYY (sheet format)."""
-        try:
-            from datetime import datetime
-            return datetime.strptime(d.strip(), "%Y-%m-%d").strftime("%m/%d/%Y")
-        except Exception:
-            return d  # pass through unchanged if already in correct format or empty
-
     try:
         from services.trips import add_trip
         trip_data = {
@@ -205,8 +197,8 @@ def _auto_create_trip_if_booked(entry: dict) -> None:
             "Cust. Contact Number":       entry.get("contact", ""),
             "Trip From":                  entry.get("trip_from", ""),
             "Trip TO":                    entry.get("trip_to", ""),
-            "Start Date":                 _to_sheet_date(entry.get("travel_date", "")),
-            "End date":                   _to_sheet_date(entry.get("return_date", "")),
+            "Start Date":                 entry.get("travel_date", ""),
+            "End date":                   entry.get("return_date", ""),
             "Vehicle Details":            entry.get("vehicle", ""),
             "Driver":                     entry.get("driver_name", ""),
             "Deal Price":                 entry.get("quote_price", ""),
@@ -437,3 +429,51 @@ def _parse_date(value: str) -> Optional[date]:
         except ValueError:
             continue
     return None
+
+
+# ── Fund Deposit ───────────────────────────────────────────────────────────────
+
+FUND_DEPOSIT_SHEET = "FundDeposits"
+FUND_COLUMNS = ["Date", "Amount Cash", "Amount Bank", "Notes", "Deposited By"]
+
+
+def _ensure_fund_sheet():
+    try:
+        return open_worksheet_by_name(FUND_DEPOSIT_SHEET)
+    except Exception:
+        from services.sheets import get_client
+        from config import SHEET_URL
+        client = get_client()
+        wb = client.open_by_url(f"{SHEET_URL}/edit")
+        ws = wb.add_worksheet(title=FUND_DEPOSIT_SHEET, rows=500, cols=len(FUND_COLUMNS))
+        ws.append_row(FUND_COLUMNS)
+        return ws
+
+
+def create_fund_deposit(data: dict) -> dict:
+    ws = _ensure_fund_sheet()
+    row = [
+        data.get("date", _now_ts()[:10]),
+        data.get("amount_cash", 0),
+        data.get("amount_bank", 0),
+        data.get("notes", ""),
+        data.get("deposited_by", ""),
+    ]
+    ws.append_row(row, value_input_option="USER_ENTERED")
+    return {"msg": "Fund deposit recorded"}
+
+
+def get_fund_deposits() -> dict:
+    ws = _ensure_fund_sheet()
+    rows = ws.get_all_values()
+    if len(rows) <= 1:
+        return {"deposits": []}
+    deposits = []
+    for i, row in enumerate(rows[1:], start=2):
+        if not any(v.strip() for v in row):
+            continue
+        d = {"_row": i}
+        for j, col in enumerate(FUND_COLUMNS):
+            d[col] = row[j] if j < len(row) else ""
+        deposits.append(d)
+    return {"deposits": deposits}

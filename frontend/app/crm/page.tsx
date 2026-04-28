@@ -3,6 +3,7 @@ import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "@/lib/toast";
 import Navbar from "@/components/Navbar";
 import { useEffect, useState, useCallback } from "react";
+import { useRoleGuard } from "@/lib/useRoleGuard";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -93,6 +94,9 @@ const Label = ({ text, required }: { text: string; required?: boolean }) => (
 // ════════════════════════════════════════════════════════════════════════════════
 
 export default function CRMPage() {
+  const role = useRoleGuard(["admin", "staff"]);
+  const loggedInUser = typeof window !== "undefined" ? sessionStorage.getItem("username") ?? "" : "";
+
   const [view, setView] = useState<"table" | "followups">("table");
   const [entries, setEntries] = useState<CRMEntry[]>([]);
   const [followupData, setFollowupData] = useState<{ grouped: FollowupGroup; today: string }>({ grouped: {}, today: "" });
@@ -120,6 +124,11 @@ export default function CRMPage() {
 
   // Analytics
   const [analytics, setAnalytics] = useState<any>(null);
+
+  // Fund Deposit modal
+  const [showFundModal, setShowFundModal] = useState(false);
+  const [fundForm, setFundForm] = useState({ amount_cash: "", amount_bank: "", notes: "", date: "" });
+  const [fundSaving, setFundSaving] = useState(false);
 
   // Is current form status "Booked"?
   const isBooked = form.status === "Booked";
@@ -176,13 +185,31 @@ export default function CRMPage() {
     else fetchFollowups();
   }, [view, fetchEntries, fetchFollowups]);
 
+
+  const handleFundDeposit = async () => {
+    if (!fundForm.amount_cash && !fundForm.amount_bank) return toast.error("Enter at least one amount");
+    setFundSaving(true);
+    try {
+      const res = await apiFetch("/crm/fund-deposit", {
+        method: "POST",
+        body: JSON.stringify({ ...fundForm, deposited_by: loggedInUser }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Failed");
+      toast.success("Fund deposit recorded!");
+      setShowFundModal(false);
+      setFundForm({ amount_cash: "", amount_bank: "", notes: "", date: "" });
+    } catch (e: any) { toast.error(e.message); }
+    finally { setFundSaving(false); }
+  };
+
   // ── Modal helpers ──────────────────────────────────────────────────────────
 
   const setField = (key: string, val: string) =>
     setForm(f => ({ ...f, [key]: val }));
 
   const openCreate = () => {
-    setForm({ ...EMPTY_FORM });
+    setForm({ ...EMPTY_FORM, attendant: loggedInUser });
     setEditRow(null);
     setModalMode("create");
     setShowModal(true);
@@ -376,7 +403,10 @@ export default function CRMPage() {
                 <button className={`crm-tab ${view==="table"?"active":""}`} onClick={() => setView("table")}>All Entries</button>
                 <button className={`crm-tab ${view==="followups"?"active":""}`} onClick={() => setView("followups")}>Follow-Ups</button>
               </div>
-              <button className="btn-primary" onClick={openCreate} style={{ fontSize:13 }}>+ New Entry</button>
+              <div style={{ display: "flex", gap: 8 }}>
+                <button className="btn-ghost" onClick={() => setShowFundModal(true)} style={{ fontSize:13 }}>💰 Fund Deposit</button>
+                <button className="btn-primary" onClick={openCreate} style={{ fontSize:13 }}>+ New Entry</button>
+              </div>
             </div>
           </div>
 
@@ -842,6 +872,50 @@ export default function CRMPage() {
           </div>
         </div>
       )}
+
+      {/* ── Fund Deposit Modal ─────────────────────────────────────────────── */}
+      {showFundModal && (
+        <div className="modal-overlay" onClick={e => { if (e.target === e.currentTarget) setShowFundModal(false); }}>
+          <div className="modal-box crm-fade" style={{ maxWidth: 460 }}>
+            <h2 style={{ fontSize: 17, fontWeight: 700, marginBottom: 20 }}>💰 Record Fund Deposit</h2>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: 5 }}>Cash Amount (₹)</label>
+                <input type="number" className="input-field" style={{ fontSize: 13 }}
+                  value={fundForm.amount_cash} onChange={e => setFundForm(f => ({ ...f, amount_cash: e.target.value }))} placeholder="0" />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: 5 }}>Bank Amount (₹)</label>
+                <input type="number" className="input-field" style={{ fontSize: 13 }}
+                  value={fundForm.amount_bank} onChange={e => setFundForm(f => ({ ...f, amount_bank: e.target.value }))} placeholder="0" />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: 5 }}>Date</label>
+                <input type="date" className="input-field" style={{ fontSize: 13 }}
+                  value={fundForm.date} onChange={e => setFundForm(f => ({ ...f, date: e.target.value }))} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: 5 }}>Deposited By</label>
+                <input className="input-field" style={{ fontSize: 13, background: "rgba(0,0,0,0.04)", color: "var(--text-muted)" }}
+                  value={loggedInUser} readOnly />
+              </div>
+              <div style={{ gridColumn: "1 / -1" }}>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", display: "block", marginBottom: 5 }}>Notes</label>
+                <input className="input-field" style={{ fontSize: 13 }}
+                  value={fundForm.notes} onChange={e => setFundForm(f => ({ ...f, notes: e.target.value }))} placeholder="Optional note..." />
+              </div>
+            </div>
+            <div style={{ display: "flex", gap: 10, marginTop: 22, justifyContent: "flex-end" }}>
+              <button className="btn-ghost" onClick={() => setShowFundModal(false)} disabled={fundSaving}>Cancel</button>
+              <button className="btn-primary" onClick={handleFundDeposit} disabled={fundSaving}>
+                {fundSaving ? "Saving…" : "Record Deposit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+
     </>
   );
 }

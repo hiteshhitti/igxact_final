@@ -2,7 +2,7 @@
 utils.py
 ────────
 Auth helpers: password hashing, JWT creation/verification, RBAC dependencies.
-All config values imported from config.py — never duplicated here.
+Roles: admin (full access) | staff (trips + crm) | user (dashboard/insights/monthly)
 """
 
 import hashlib
@@ -92,5 +92,15 @@ def require_admin(user: dict = Depends(verify_token)) -> dict:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required",
+        )
+    return user
+
+
+def require_staff_or_admin(user: dict = Depends(verify_token)) -> dict:
+    """Allow admin and staff roles (trips + crm write access)."""
+    if user.get("role") not in ("admin", "staff"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Staff or admin access required",
         )
     return user

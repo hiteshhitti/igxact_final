@@ -20,7 +20,7 @@ from pydantic import BaseModel, Field, validator, root_validator
 # ─── Allowed values ────────────────────────────────────────────────────────────
 
 MODE_VALUES    = {"Call", "WhatsApp"}
-STATUS_VALUES  = {"Enquiry", "Booked", "Interested", "Super Interested", "Trip Decline", "Cancelled", "Not Interested"}
+STATUS_VALUES  = {"Enquiry", "Booked", "Interested", "Super Interested", "Trip Decline", "Cancelled", "Not Interested", "Fund Deposit"}
 CHANNEL_VALUES = {"Meta Ads", "Google Ads"}
 
 

@@ -5,12 +5,15 @@ import Navbar from "@/components/Navbar";
 import { useSmoothRouter } from "@/components/UseSmoothRouter";
 import { useEffect, useState } from "react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { useRoleGuard } from "@/lib/useRoleGuard";
 
 const COLORS = ['#4f8ef7', '#22d3a0', '#a78bfa', '#f97316', '#f87171'];
 const axisProps = { stroke: "#475569", fontSize: 12, fontFamily: "var(--font-body)" };
 const tooltipStyle = { background: "rgba(255,255,255,0.97)", border: "1px solid rgba(0,0,0,0.10)", borderRadius: 14, boxShadow: "0 8px 32px rgba(0,0,0,0.10)", fontFamily: "var(--font-body)", fontSize: 13 };
 
 export default function InsightsPage() {
+  const role = useRoleGuard(null);
+  if (!role) return null;
   const [data, setData]   = useState<any>(null);
   const [year, setYear]   = useState<number | null>(null);
   const [years, setYears] = useState<number[]>([]);

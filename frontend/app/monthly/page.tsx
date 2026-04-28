@@ -7,6 +7,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useEffect, useState } from "react";
 import {
+import { useRoleGuard } from "@/lib/useRoleGuard";
   BarChart, Bar, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer
 } from "recharts";
 
@@ -21,6 +22,8 @@ const tooltipStyle = {
 };
 
 export default function MonthlyPage() {
+  const role = useRoleGuard(null);
+  if (!role) return null;
   const [data, setData]         = useState<any>(null);
   const [fromDate, setFromDate] = useState<Date | null>(null);
   const [toDate, setToDate]     = useState<Date | null>(null);
