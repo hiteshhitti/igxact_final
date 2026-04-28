@@ -42,21 +42,22 @@ def _invalidate_cache() -> None:
 
 
 def _ensure_sheet():
+    from services.sheets import get_client
+    from config import SHEET_URL
+    client = get_client()
     try:
-        return open_worksheet_by_name(SHEET_NAME)
-    except Exception:
-        from services.sheets import get_client
-        from config import SHEET_URL
-        client = get_client()
+        wb = client.open_by_url(f"{SHEET_URL}/edit")
         try:
-            wb = client.open_by_url(f"{SHEET_URL}/edit")
+            return wb.worksheet(SHEET_NAME)
+        except Exception:
+            # Sheet doesn't exist yet — create it
             ws = wb.add_worksheet(title=SHEET_NAME, rows=1000, cols=len(COLUMNS))
             ws.append_row(COLUMNS)
-            logger.info(f"{SHEET_NAME} sheet created")
+            logger.info(f"{SHEET_NAME} sheet created with headers")
             return ws
-        except Exception as e:
-            logger.error(f"Failed to create {SHEET_NAME} sheet: {e}")
-            raise HTTPException(status_code=500, detail=f"Could not create {SHEET_NAME} sheet")
+    except Exception as e:
+        logger.error(f"Failed to open/create {SHEET_NAME} sheet: {e}")
+        raise HTTPException(status_code=500, detail=f"Could not open or create sheet '{SHEET_NAME}': {e}")
 
 
 def _row_to_dict(row: list, row_index: int) -> dict:
