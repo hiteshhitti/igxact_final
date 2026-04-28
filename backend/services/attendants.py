@@ -44,7 +44,7 @@ def _invalidate_cache() -> None:
 def _ensure_sheet():
     try:
         return open_worksheet_by_name(SHEET_NAME)
-    except HTTPException:
+    except Exception:
         from services.sheets import get_client
         from config import SHEET_URL
         client = get_client()

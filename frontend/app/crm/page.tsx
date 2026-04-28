@@ -93,7 +93,7 @@ const Label = ({ text, required }: { text: string; required?: boolean }) => (
 // ════════════════════════════════════════════════════════════════════════════════
 
 export default function CRMPage() {
-  const [view, setView] = useState<"table" | "followups">("table");
+  const [view, setView] = useState<"table" | "followups" | "deposits">("table");
   const [entries, setEntries] = useState<CRMEntry[]>([]);
   const [followupData, setFollowupData] = useState<{ grouped: FollowupGroup; today: string }>({ grouped: {}, today: "" });
   const [vehicles, setVehicles] = useState<string[]>([]);
@@ -206,7 +206,8 @@ export default function CRMPage() {
   useEffect(() => { fetchVehicles(); fetchAnalytics(); fetchDeposits(); }, []);
   useEffect(() => {
     if (view === "table") fetchEntries();
-    else fetchFollowups();
+    else if (view === "followups") fetchFollowups();
+    else if (view === "deposits") fetchDeposits();
   }, [view, fetchEntries, fetchFollowups]);
 
   // ── Modal helpers ──────────────────────────────────────────────────────────
@@ -408,6 +409,7 @@ export default function CRMPage() {
               <div className="crm-tab-bar">
                 <button className={`crm-tab ${view==="table"?"active":""}`} onClick={() => setView("table")}>All Entries</button>
                 <button className={`crm-tab ${view==="followups"?"active":""}`} onClick={() => setView("followups")}>Follow-Ups</button>
+                <button className={`crm-tab ${view==="deposits"?"active":""}`} onClick={() => setView("deposits")}>💰 Deposits</button>
               </div>
               <button className="btn-primary" onClick={openCreate} style={{ fontSize:13 }}>+ New Entry</button>
               <button onClick={() => setShowDepositModal(true)} style={{
@@ -826,6 +828,69 @@ export default function CRMPage() {
           </div>
         </div>
       )}
+
+          {/* ════════════════════════════════════════════════════════════════
+              DEPOSITS VIEW
+          ════════════════════════════════════════════════════════════════ */}
+          {view === "deposits" && (
+            <div className="crm-fade">
+              {depositsLoading ? (
+                <div style={{ padding:48, textAlign:"center" }}><Spinner /></div>
+              ) : deposits.length === 0 ? (
+                <div className="empty-glass">No deposits recorded yet. Click "💰 Log Deposit" to add one.</div>
+              ) : (
+                <div>
+                  {/* Summary bar */}
+                  {(() => {
+                    const totalCash = deposits.filter((d:any) => d.mode === "Cash").reduce((s:number,d:any) => s + (Number(d.amount)||0), 0);
+                    const totalBank = deposits.filter((d:any) => d.mode === "Bank").reduce((s:number,d:any) => s + (Number(d.amount)||0), 0);
+                    const grandTotal = totalCash + totalBank;
+                    return (
+                      <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:12, marginBottom:20 }}>
+                        {[
+                          { label:"Total Deposited", value:`₹${grandTotal.toLocaleString("en-IN")}`, color:"var(--accent-primary)" },
+                          { label:"Cash", value:`₹${totalCash.toLocaleString("en-IN")}`, color:"var(--accent-green)" },
+                          { label:"Bank", value:`₹${totalBank.toLocaleString("en-IN")}`, color:"var(--accent-purple)" },
+                        ].map(({ label, value, color }) => (
+                          <div key={label} style={{ background:"rgba(255,255,255,0.72)", backdropFilter:"blur(12px)", border:"1px solid rgba(255,255,255,0.85)", borderRadius:14, padding:"16px 20px", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
+                            <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:6 }}>{label}</p>
+                            <p style={{ fontFamily:"var(--font-display)", fontSize:22, fontWeight:800, color }}>{value}</p>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Table */}
+                  <div style={{ background:"rgba(255,255,255,0.72)", backdropFilter:"blur(12px)", border:"1px solid rgba(255,255,255,0.85)", borderRadius:14, overflow:"hidden", boxShadow:"0 2px 12px rgba(0,0,0,0.06)" }}>
+                    <table style={{ width:"100%", borderCollapse:"collapse" }}>
+                      <thead>
+                        <tr style={{ borderBottom:"1px solid rgba(0,0,0,0.08)" }}>
+                          {["Date","Deposited By","Amount","Mode","Reference","Notes"].map(h => (
+                            <th key={h} style={{ padding:"12px 16px", textAlign:"left", fontSize:11, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.07em" }}>{h}</th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {[...deposits].reverse().map((d:any, i:number) => (
+                          <tr key={i} style={{ borderBottom:"1px solid rgba(0,0,0,0.05)", background: i%2===0 ? "transparent" : "rgba(0,0,0,0.015)" }}>
+                            <td style={{ padding:"12px 16px", fontSize:13, color:"var(--text-primary)", fontWeight:500 }}>{d.deposit_date}</td>
+                            <td style={{ padding:"12px 16px", fontSize:13, color:"var(--text-primary)" }}>{d.deposited_by}</td>
+                            <td style={{ padding:"12px 16px", fontSize:14, fontWeight:700, color:"var(--accent-green)" }}>₹{Number(d.amount||0).toLocaleString("en-IN")}</td>
+                            <td style={{ padding:"12px 16px" }}>
+                              <span style={{ fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:20, background: d.mode==="Cash" ? "rgba(249,115,22,0.12)" : "rgba(37,99,235,0.12)", color: d.mode==="Cash" ? "#f97316" : "var(--accent-primary)" }}>{d.mode}</span>
+                            </td>
+                            <td style={{ padding:"12px 16px", fontSize:13, color:"var(--text-muted)" }}>{d.reference || "—"}</td>
+                            <td style={{ padding:"12px 16px", fontSize:13, color:"var(--text-muted)", maxWidth:200 }}>{d.notes || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
 
       {/* ════════════════════════════════════════════════════════════════════
           HISTORY MODAL
