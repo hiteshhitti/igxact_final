@@ -40,7 +40,6 @@ export default function ChangePassword() {
         // Backend revoked all sessions — clear client and redirect
         sessionStorage.removeItem("token");
         sessionStorage.removeItem("role");
-        sessionStorage.removeItem("username");
         sessionStorage.removeItem("token_expires_at");
         setTimeout(() => { window.location.href = "/login"; }, 1800);
       } else {

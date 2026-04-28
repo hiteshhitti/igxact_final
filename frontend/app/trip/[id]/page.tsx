@@ -4,10 +4,8 @@ import { apiFetch } from "@/lib/apiFetch";
 import { toast } from "@/lib/toast";
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
-import { useRoleGuard } from "@/lib/useRoleGuard";
 
 export default function TripDetail() {
-  const role = useRoleGuard(null);
   const params = useParams();
   const id = params?.id;
 

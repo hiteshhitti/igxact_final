@@ -5,7 +5,6 @@ import { useState, useEffect } from "react";
 import Navbar from "@/components/Navbar";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { useRoleGuard } from "@/lib/useRoleGuard";
 
 const datePickerStyles = `
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -39,8 +38,6 @@ function validateForm(form: any): string | null {
 }
 
 export default function TripsPage() {
-  const role = useRoleGuard(["admin", "staff"]);
-  if (!role) return null;
   const [trips, setTrips]         = useState<any[]>([]);
   const [columns, setColumns]     = useState<string[]>([]);
   const [form, setForm]           = useState<any>({});
@@ -53,7 +50,17 @@ export default function TripsPage() {
   const [vehicles, setVehicles]   = useState<string[]>([]);
   const [tripId, setTripId]       = useState("");
   const [mobile, setMobile]       = useState("");
+  const [role, setRole]           = useState<string | null>(null);
   const [formErrors, setFormErrors] = useState<string | null>(null);
+
+  // ── Auth guard ────────────────────────────────────────────────────────────
+  useEffect(() => {
+    const storedRole = sessionStorage.getItem("role");
+    if (!storedRole) { window.location.href = "/login"; return; }
+    const cleanRole = storedRole.trim().toLowerCase();
+    if (cleanRole !== "admin") { window.location.href = "/"; return; }
+    setRole(cleanRole);
+  }, []);
 
   // ── Load columns ──────────────────────────────────────────────────────────
   useEffect(() => {

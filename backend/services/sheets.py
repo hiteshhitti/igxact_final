@@ -49,10 +49,9 @@ def get_client() -> gspread.Client:
 def open_sheet(tab_gid: str = "0") -> gspread.Worksheet:
     client = get_client()
     try:
-        wb = client.open_by_url(f"{SHEET_URL}/edit")
-        # Always resolve by gid — never use wb.sheet1 which returns the
-        # physically-first tab regardless of its gid.
-        return wb.get_worksheet_by_id(int(tab_gid))
+        url = f"{SHEET_URL}/edit?gid={tab_gid}"
+        wb = client.open_by_url(url)
+        return wb.sheet1 if tab_gid == "0" else wb.get_worksheet_by_id(int(tab_gid))
     except Exception as e:
         logger.error(f"Failed to open sheet gid={tab_gid}: {e}")
         raise HTTPException(status_code=500, detail="Could not open Google Sheet")

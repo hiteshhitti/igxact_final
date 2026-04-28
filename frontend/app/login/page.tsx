@@ -46,7 +46,6 @@ export default function LoginPage() {
       if (res.ok && data?.access_token) {
         sessionStorage.setItem("token", data.access_token);
         sessionStorage.setItem("role", data.role ?? "user");
-        sessionStorage.setItem("username", username.trim().toLowerCase());
         if (data.expires_in) {
           sessionStorage.setItem("token_expires_at", String(Date.now() + data.expires_in * 1000));
         }
