@@ -121,6 +121,13 @@ export default function CRMPage() {
   // Analytics
   const [analytics, setAnalytics] = useState<any>(null);
 
+  // Fund Deposit
+  const [showDepositModal, setShowDepositModal] = useState(false);
+  const [depositForm, setDepositForm] = useState({ deposit_date: new Date().toISOString().split("T")[0], deposited_by: "", amount: "", mode: "Cash", reference: "", notes: "" });
+  const [depositSaving, setDepositSaving] = useState(false);
+  const [deposits, setDeposits] = useState<any[]>([]);
+  const [depositsLoading, setDepositsLoading] = useState(false);
+
   // Is current form status "Booked"?
   const isBooked = form.status === "Booked";
 
@@ -170,7 +177,33 @@ export default function CRMPage() {
     } catch { /* non-critical */ }
   }, []);
 
-  useEffect(() => { fetchVehicles(); fetchAnalytics(); }, []);
+  const fetchDeposits = useCallback(async () => {
+    setDepositsLoading(true);
+    try {
+      const res = await apiFetch("/fund-deposits");
+      const data = await res.json();
+      if (res.ok) setDeposits(data.deposits || []);
+    } catch { /* non-critical */ }
+    finally { setDepositsLoading(false); }
+  }, []);
+
+  const handleDepositSave = async () => {
+    if (!depositForm.deposited_by.trim()) { toast.error("Deposited by is required"); return; }
+    if (!depositForm.amount.trim()) { toast.error("Amount is required"); return; }
+    setDepositSaving(true);
+    try {
+      const res = await apiFetch("/fund-deposits", { method: "POST", body: JSON.stringify(depositForm) });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || "Failed to save deposit");
+      toast.success("Fund deposit recorded!");
+      setShowDepositModal(false);
+      setDepositForm({ deposit_date: new Date().toISOString().split("T")[0], deposited_by: "", amount: "", mode: "Cash", reference: "", notes: "" });
+      fetchDeposits();
+    } catch (e: any) { toast.error(e.message); }
+    finally { setDepositSaving(false); }
+  };
+
+  useEffect(() => { fetchVehicles(); fetchAnalytics(); fetchDeposits(); }, []);
   useEffect(() => {
     if (view === "table") fetchEntries();
     else fetchFollowups();
@@ -377,6 +410,11 @@ export default function CRMPage() {
                 <button className={`crm-tab ${view==="followups"?"active":""}`} onClick={() => setView("followups")}>Follow-Ups</button>
               </div>
               <button className="btn-primary" onClick={openCreate} style={{ fontSize:13 }}>+ New Entry</button>
+              <button onClick={() => setShowDepositModal(true)} style={{
+                background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.3)",
+                color: "var(--accent-green)", borderRadius: 10, padding: "8px 16px",
+                fontSize: 13, fontWeight: 600, cursor: "pointer",
+              }}>💰 Log Deposit</button>
             </div>
           </div>
 
@@ -843,5 +881,123 @@ export default function CRMPage() {
         </div>
       )}
     </>
+
+      {/* ── Fund Deposit Modal ──────────────────────────────────────────── */}
+      {showDepositModal && (
+        <div onClick={() => setShowDepositModal(false)} style={{
+          position: "fixed", inset: 0, background: "rgba(0,0,0,0.45)",
+          backdropFilter: "blur(6px)", zIndex: 1100,
+          display: "flex", alignItems: "center", justifyContent: "center", padding: 20,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: "rgba(255,255,255,0.97)", borderRadius: 18,
+            padding: "28px 32px", width: "100%", maxWidth: 520,
+            boxShadow: "0 20px 60px rgba(0,0,0,0.20)",
+          }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+              <div>
+                <h2 style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 800, color: "var(--text-primary)" }}>
+                  💰 Log Fund Deposit
+                </h2>
+                <p style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>Record cash deposited to office</p>
+              </div>
+              <button onClick={() => setShowDepositModal(false)} style={{ background: "none", border: "none", fontSize: 22, cursor: "pointer", color: "var(--text-muted)" }}>×</button>
+            </div>
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "14px 18px" }}>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5, display: "block" }}>
+                    Deposit Date <span style={{ color: "var(--accent-red)" }}>*</span>
+                  </label>
+                  <input type="date" value={depositForm.deposit_date}
+                    onChange={e => setDepositForm(f => ({ ...f, deposit_date: e.target.value }))}
+                    style={{ width: "100%", padding: "9px 13px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.10)", background: "rgba(0,0,0,0.03)", fontSize: 14, fontFamily: "var(--font-body)", outline: "none", boxSizing: "border-box" as any, color: "var(--text-primary)" }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5, display: "block" }}>
+                    Mode <span style={{ color: "var(--accent-red)" }}>*</span>
+                  </label>
+                  <select value={depositForm.mode}
+                    onChange={e => setDepositForm(f => ({ ...f, mode: e.target.value }))}
+                    style={{ width: "100%", padding: "9px 13px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.10)", background: "rgba(0,0,0,0.03)", fontSize: 14, fontFamily: "var(--font-body)", outline: "none", boxSizing: "border-box" as any, color: "var(--text-primary)" }}>
+                    <option>Cash</option>
+                    <option>Bank</option>
+                  </select>
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5, display: "block" }}>
+                    Deposited By <span style={{ color: "var(--accent-red)" }}>*</span>
+                  </label>
+                  <input placeholder="Driver / Attendant name" value={depositForm.deposited_by}
+                    onChange={e => setDepositForm(f => ({ ...f, deposited_by: e.target.value }))}
+                    style={{ width: "100%", padding: "9px 13px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.10)", background: "rgba(0,0,0,0.03)", fontSize: 14, fontFamily: "var(--font-body)", outline: "none", boxSizing: "border-box" as any, color: "var(--text-primary)" }} />
+                </div>
+                <div>
+                  <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5, display: "block" }}>
+                    Amount (₹) <span style={{ color: "var(--accent-red)" }}>*</span>
+                  </label>
+                  <input placeholder="e.g. 5000" type="number" value={depositForm.amount}
+                    onChange={e => setDepositForm(f => ({ ...f, amount: e.target.value }))}
+                    style={{ width: "100%", padding: "9px 13px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.10)", background: "rgba(0,0,0,0.03)", fontSize: 14, fontFamily: "var(--font-body)", outline: "none", boxSizing: "border-box" as any, color: "var(--text-primary)" }} />
+                </div>
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5, display: "block" }}>
+                  Reference / Trip ID
+                </label>
+                <input placeholder="e.g. Trip #42 or receipt number" value={depositForm.reference}
+                  onChange={e => setDepositForm(f => ({ ...f, reference: e.target.value }))}
+                  style={{ width: "100%", padding: "9px 13px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.10)", background: "rgba(0,0,0,0.03)", fontSize: 14, fontFamily: "var(--font-body)", outline: "none", boxSizing: "border-box" as any, color: "var(--text-primary)" }} />
+              </div>
+              <div>
+                <label style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 5, display: "block" }}>
+                  Notes
+                </label>
+                <textarea placeholder="Additional notes..." value={depositForm.notes}
+                  onChange={e => setDepositForm(f => ({ ...f, notes: e.target.value }))}
+                  style={{ width: "100%", padding: "9px 13px", borderRadius: 8, border: "1px solid rgba(0,0,0,0.10)", background: "rgba(0,0,0,0.03)", fontSize: 14, fontFamily: "var(--font-body)", outline: "none", boxSizing: "border-box" as any, color: "var(--text-primary)", height: 72, resize: "vertical" as any }} />
+              </div>
+
+              {/* Recent deposits */}
+              {deposits.length > 0 && (
+                <div style={{ borderTop: "1px solid rgba(0,0,0,0.08)", paddingTop: 14 }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 10 }}>Recent Deposits</p>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6, maxHeight: 160, overflowY: "auto" }}>
+                    {deposits.slice(-5).reverse().map((dep: any, i: number) => (
+                      <div key={i} style={{
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                        background: "rgba(34,197,94,0.06)", borderRadius: 8, padding: "7px 12px",
+                        border: "1px solid rgba(34,197,94,0.15)",
+                      }}>
+                        <div>
+                          <p style={{ fontSize: 13, fontWeight: 600, color: "var(--text-primary)" }}>{dep.deposited_by}</p>
+                          <p style={{ fontSize: 11, color: "var(--text-muted)" }}>{dep.deposit_date} • {dep.mode}{dep.reference ? ` • ${dep.reference}` : ""}</p>
+                        </div>
+                        <p style={{ fontSize: 15, fontWeight: 700, color: "var(--accent-green)" }}>₹{Number(dep.amount || 0).toLocaleString("en-IN")}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 24 }}>
+              <button onClick={() => setShowDepositModal(false)} style={{
+                background: "rgba(0,0,0,0.06)", border: "none", borderRadius: 10,
+                padding: "10px 20px", fontSize: 14, cursor: "pointer",
+              }}>Cancel</button>
+              <button onClick={handleDepositSave} disabled={depositSaving} style={{
+                background: "var(--accent-green)", color: "#fff",
+                border: "none", borderRadius: 10, padding: "10px 24px",
+                fontSize: 14, fontWeight: 600, cursor: depositSaving ? "not-allowed" : "pointer",
+                opacity: depositSaving ? 0.7 : 1,
+              }}>
+                {depositSaving ? "Saving..." : "Record Deposit"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
   );
 }
