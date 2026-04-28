@@ -51,6 +51,24 @@ export default function Navbar() {
         </button>
         )}
 
+        {role === "admin" && (
+        <button onClick={() => push("/drivers")}>
+          Drivers
+        </button>
+        )}
+
+        {role === "admin" && (
+        <button onClick={() => push("/cars")}>
+          Cars
+        </button>
+        )}
+
+        {role === "admin" && (
+        <button onClick={() => push("/attendants")}>
+          Attendants
+        </button>
+        )}
+
         {/* 🔥 LOGOUT BUTTON */}
         <button
           onClick={logout}
