@@ -880,7 +880,6 @@ export default function CRMPage() {
           </div>
         </div>
       )}
-    </>
 
       {/* ── Fund Deposit Modal ──────────────────────────────────────────── */}
       {showDepositModal && (
@@ -999,5 +998,6 @@ export default function CRMPage() {
           </div>
         </div>
       )}
+    </>
   );
 }
