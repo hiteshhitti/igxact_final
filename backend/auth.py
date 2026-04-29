@@ -8,11 +8,12 @@ from database import SessionLocal
 from models import User
 from schemas.auth import ChangePasswordRequest, LoginRequest, MessageResponse, TokenResponse
 from config import ACCESS_TOKEN_EXPIRE_MINUTES, REFRESH_TOKEN_EXPIRE_DAYS
-from utils import require_admin, (
+from utils import (
     create_access_token,
     create_refresh_token,
     hash_password,
     hash_refresh_token,
+    require_admin,
     verify_password,
     verify_token,
 )
