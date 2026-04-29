@@ -24,7 +24,9 @@ const datePickerStyles = `
 `;
 
 const SKIP_COLS = new Set(["trip id","Profit Percentage","Net Profit (without Driver Salary)","Profit without commission"]);
-const NUM_COLS  = new Set(["Deal Price","Fuel","Tolls & Taxes","Parking","Driver Allowance","Sales Commission","Number of Days","Other Expenses","Booking Amt/Advance Cash","Booking Amt/Advance Bank","Total Cash","Total Bank"]);
+const NUM_COLS  = new Set(["Deal Price","Fuel","Tolls & Taxes","Parking","Driver Allowance","Sales Commission","Number of Days","Other Expenses","Booking Amt/Advance Cash","Booking Amt/Advance Bank","2nd Payment Cash Bank","2nd Payment Bank","Final Payment Mode Cash","Final Payment Mode Bank","Total Cash","Total Bank","Total","Per Day Cost"]);
+const PAYMENT_COLS = ["Booking Amt/Advance Cash","Booking Amt/Advance Bank","2nd Payment Cash Bank","2nd Payment Bank","Final Payment Mode Cash","Final Payment Mode Bank"];
+const AUTO_CALC_COLS = new Set(["Total Cash","Total Bank","Total","Per Day Cost","Number of Days"]);
 
 // ── Field-level validation ────────────────────────────────────────────────────
 function validateForm(form: any): string | null {
@@ -91,6 +93,37 @@ export default function TripsPage() {
       }
     }
   }, [form["Start Date"], form["End date"]]);
+
+  // ── Auto-calculate payment totals ────────────────────────────────────────
+  useEffect(() => {
+    const advCash   = num(form["Booking Amt/Advance Cash"]);
+    const advBank   = num(form["Booking Amt/Advance Bank"]);
+    const pay2Cash  = num(form["2nd Payment Cash Bank"]);
+    const pay2Bank  = num(form["2nd Payment Bank"]);
+    const finalCash = num(form["Final Payment Mode Cash"]);
+    const finalBank = num(form["Final Payment Mode Bank"]);
+
+    const totalCash = advCash + pay2Cash + finalCash;
+    const totalBank = advBank + pay2Bank + finalBank;
+    const total     = totalCash + totalBank;
+
+    const days    = num(form["Number of Days"]);
+    const deal    = num(form["Deal Price"]);
+    const perDay  = days > 0 && deal > 0 ? Math.round(deal / days) : 0;
+
+    setForm((prev: any) => ({
+      ...prev,
+      "Total Cash": totalCash,
+      "Total Bank": totalBank,
+      "Total":      total,
+      "Per Day Cost": perDay,
+    }));
+  }, [
+    form["Booking Amt/Advance Cash"], form["Booking Amt/Advance Bank"],
+    form["2nd Payment Cash Bank"],    form["2nd Payment Bank"],
+    form["Final Payment Mode Cash"],  form["Final Payment Mode Bank"],
+    form["Number of Days"],           form["Deal Price"],
+  ]);
 
   const num = (val: any) => Number(val) || 0;
 
@@ -163,7 +196,39 @@ export default function TripsPage() {
       return;
     }
 
+    // ── Payment check when marking Completed ─────────────────────────────
+    if (form["Status"] === "completed") {
+      const deal = num(form["Deal Price"]);
+      const total =
+        num(form["Booking Amt/Advance Cash"])  + num(form["Booking Amt/Advance Bank"]) +
+        num(form["2nd Payment Cash Bank"])     + num(form["2nd Payment Bank"]) +
+        num(form["Final Payment Mode Cash"])   + num(form["Final Payment Mode Bank"]);
+      if (deal <= 0) {
+        const msg = "Deal Price must be set before marking Completed.";
+        setFormErrors(msg); toast.error(msg); return;
+      }
+      if (total !== deal) {
+        const diff = deal - total;
+        const msg = diff > 0
+          ? `Cannot mark Completed — ₹${diff.toLocaleString("en-IN")} still pending (Received: ₹${total.toLocaleString("en-IN")} / Deal: ₹${deal.toLocaleString("en-IN")})`
+          : `Cannot mark Completed — Total received ₹${total.toLocaleString("en-IN")} exceeds Deal Size ₹${deal.toLocaleString("en-IN")}`;
+        setFormErrors(msg); toast.error(msg); return;
+      }
+    }
+
     setSaving(true);
+    const advCash   = num(form["Booking Amt/Advance Cash"]);
+    const advBank   = num(form["Booking Amt/Advance Bank"]);
+    const pay2Cash  = num(form["2nd Payment Cash Bank"]);
+    const pay2Bank  = num(form["2nd Payment Bank"]);
+    const finalCash = num(form["Final Payment Mode Cash"]);
+    const finalBank = num(form["Final Payment Mode Bank"]);
+    const totalCash = advCash + pay2Cash + finalCash;
+    const totalBank = advBank + pay2Bank + finalBank;
+    const totalAmt  = totalCash + totalBank;
+    const days      = num(form["Number of Days"]);
+    const perDay    = days > 0 && deal > 0 ? Math.round(deal / days) : 0;
+
     const payload = {
       ...form,
       "Start Date": formatToSheetDate(form["Start Date"] || ""),
@@ -172,6 +237,10 @@ export default function TripsPage() {
       "Net Profit (without Driver Salary)": netProfit,
       "Profit without commission": profitWithoutCommission,
       "Profit Percentage": Number(profitPercent),
+      "Total Cash": totalCash,
+      "Total Bank": totalBank,
+      "Total":      totalAmt,
+      "Per Day Cost": perDay,
     };
 
     try {
@@ -280,20 +349,63 @@ export default function TripsPage() {
                   </div>
                 );
               }
+              const isAutoCalc = AUTO_CALC_COLS.has(col);
               return (
                 <div key={col}>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>{col}</label>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 600, color: isAutoCalc ? "var(--accent-primary)" : "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.06em", marginBottom: 6 }}>
+                    {col}{isAutoCalc ? " ✦" : ""}
+                  </label>
                   <input
                     type={NUM_COLS.has(col) ? "number" : "text"}
                     className="input-field"
                     value={form[col] || ""}
-                    onChange={e => setForm((p: any) => ({ ...p, [col]: e.target.value }))}
-                    placeholder={col}
+                    onChange={isAutoCalc ? undefined : (e => setForm((p: any) => ({ ...p, [col]: e.target.value })))}
+                    readOnly={isAutoCalc}
+                    placeholder={isAutoCalc ? "Auto-calculated" : col}
+                    style={isAutoCalc ? { background: "rgba(37,99,235,0.05)", cursor: "not-allowed", color: "var(--accent-primary)", fontWeight: 600 } : {}}
                   />
                 </div>
               );
             })}
           </div>
+
+          {/* Payment Summary */}
+          {num(form["Deal Price"]) > 0 && (() => {
+            const deal     = num(form["Deal Price"]);
+            const received = num(form["Total"]) ||
+              num(form["Booking Amt/Advance Cash"])  + num(form["Booking Amt/Advance Bank"]) +
+              num(form["2nd Payment Cash Bank"])     + num(form["2nd Payment Bank"]) +
+              num(form["Final Payment Mode Cash"])   + num(form["Final Payment Mode Bank"]);
+            const pending  = Math.max(0, deal - received);
+            const isPaid   = received >= deal;
+            return (
+              <div style={{
+                marginTop: 20, padding: "16px 20px", borderRadius: 12,
+                background: isPaid ? "rgba(34,197,94,0.07)" : "rgba(249,115,22,0.07)",
+                border: `1px solid ${isPaid ? "rgba(34,197,94,0.25)" : "rgba(249,115,22,0.25)"}`,
+                display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(160px,1fr))", gap: 14,
+              }}>
+                {[
+                  { label: "Deal Size",      value: deal,                         color: "var(--text-primary)" },
+                  { label: "Total Cash",     value: num(form["Total Cash"]),       color: "#16a34a" },
+                  { label: "Total Bank",     value: num(form["Total Bank"]),       color: "var(--accent-primary)" },
+                  { label: "Total Received", value: received,                     color: isPaid ? "var(--accent-green)" : "#f97316" },
+                  { label: "Pending",        value: pending,                      color: pending > 0 ? "var(--accent-red)" : "var(--accent-green)" },
+                  { label: "Per Day Cost",   value: num(form["Per Day Cost"]),     color: "var(--text-muted)" },
+                ].map(({ label, value, color }) => (
+                  <div key={label}>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>{label}</p>
+                    <p style={{ fontSize: 16, fontWeight: 800, color, fontFamily: "var(--font-display)" }}>₹{Number(value).toLocaleString("en-IN")}</p>
+                  </div>
+                ))}
+                {form["Status"] === "completed" && received !== deal && (
+                  <div style={{ gridColumn: "1/-1", display: "flex", alignItems: "center", gap: 8, color: "var(--accent-red)", fontSize: 13, fontWeight: 600 }}>
+                    ⚠️ Cannot mark Completed — Total received must equal Deal Size (₹{Math.abs(deal - received).toLocaleString("en-IN")} {received < deal ? "still pending" : "overpaid"})
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
             <button className="btn-primary" onClick={handleSubmit} disabled={saving} style={{ opacity: saving ? 0.7 : 1, display: "flex", alignItems: "center", gap: 8 }}>
