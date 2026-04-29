@@ -177,7 +177,7 @@ export default function CRMPage() {
     } catch { /* non-critical */ }
   }, []);
 
-  const fetchDeposits = useCallback(async () => {
+  const fetchDeposits = async () => {
     setDepositsLoading(true);
     try {
       const res = await apiFetch("/fund-deposits");
@@ -185,11 +185,11 @@ export default function CRMPage() {
       if (!res.ok) throw new Error(data.detail || "Failed to load deposits");
       setDeposits(data.deposits || []);
     } catch (e: any) {
-      console.error("Deposits fetch error:", e.message);
       toast.error("Deposits: " + e.message);
+    } finally {
+      setDepositsLoading(false);
     }
-    finally { setDepositsLoading(false); }
-  }, []);
+  };
 
   const handleDepositSave = async () => {
     if (!depositForm.deposited_by.trim()) { toast.error("Deposited by is required"); return; }
@@ -207,12 +207,12 @@ export default function CRMPage() {
     finally { setDepositSaving(false); }
   };
 
-  useEffect(() => { fetchVehicles(); fetchAnalytics(); fetchDeposits(); }, []);
+  useEffect(() => { fetchVehicles(); fetchAnalytics(); }, []);
   useEffect(() => {
     if (view === "table") fetchEntries();
     else if (view === "followups") fetchFollowups();
     else if (view === "deposits") fetchDeposits();
-  }, [view, fetchEntries, fetchFollowups, fetchDeposits]);
+  }, [view]);
 
   // ── Modal helpers ──────────────────────────────────────────────────────────
 
