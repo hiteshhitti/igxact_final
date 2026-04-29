@@ -128,6 +128,8 @@ export default function CRMPage() {
   const [deposits, setDeposits] = useState<any[]>([]);
   const [depositsLoading, setDepositsLoading] = useState(false);
 
+  const [username, setUsername] = useState<string>("");
+
   // Is current form status "Booked"?
   const isBooked = form.status === "Booked";
 
@@ -207,7 +209,11 @@ export default function CRMPage() {
     finally { setDepositSaving(false); }
   };
 
-  useEffect(() => { fetchVehicles(); fetchAnalytics(); }, []);
+  useEffect(() => {
+    fetchVehicles();
+    fetchAnalytics();
+    setUsername(sessionStorage.getItem("username") ?? "");
+  }, []);
   useEffect(() => {
     if (view === "table") fetchEntries();
     else if (view === "followups") fetchFollowups();
@@ -220,7 +226,7 @@ export default function CRMPage() {
     setForm(f => ({ ...f, [key]: val }));
 
   const openCreate = () => {
-    setForm({ ...EMPTY_FORM });
+    setForm({ ...EMPTY_FORM, attendant: username });
     setEditRow(null);
     setModalMode("create");
     setShowModal(true);
@@ -768,7 +774,7 @@ export default function CRMPage() {
               {/* Attendant */}
               <div>
                 <Label text="Attendant" />
-                <input className="input-field" style={{ fontSize:13 }} value={form.attendant} onChange={e => setField("attendant", e.target.value)} placeholder="Staff name" />
+                <input className="input-field" style={{ fontSize:13, background:"rgba(0,0,0,0.04)", cursor:"not-allowed" }} value={form.attendant} readOnly placeholder="Staff name" />
               </div>
 
               {/* Follow-up Date */}
