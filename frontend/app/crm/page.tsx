@@ -182,9 +182,12 @@ export default function CRMPage() {
     try {
       const res = await apiFetch("/fund-deposits");
       const data = await res.json();
-      if (!res.ok) throw new Error(data.detail || "Failed");
+      if (!res.ok) throw new Error(data.detail || "Failed to load deposits");
       setDeposits(data.deposits || []);
-    } catch (e: any) { console.error("Deposits fetch error:", e.message); }
+    } catch (e: any) {
+      console.error("Deposits fetch error:", e.message);
+      toast.error("Deposits: " + e.message);
+    }
     finally { setDepositsLoading(false); }
   }, []);
 

@@ -142,7 +142,7 @@ def list_deposits(
     search: str = Query(None),
     user=Depends(verify_token),
 ):
-    rows = query_deposits(start=start, end=end, search=search)
+    rows = query_deposits(start=start, end=end, search=search, use_cache=False)
     return {"deposits": rows, "total": len(rows)}
 
 

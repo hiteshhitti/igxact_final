@@ -78,12 +78,26 @@ def _fetch_all_raw() -> list[dict]:
 
     if not all_rows:
         return []
-    data_rows = all_rows[1:]
+
+    # Detect if first row is a header row or data row
+    # If first cell matches our first column name it's a header — skip it
+    first_row = [str(v).strip().lower().replace(" ", "_") for v in all_rows[0]]
+    if first_row[0] == COLUMNS[0].lower():
+        data_rows = all_rows[1:]
+        start_idx = 2
+    else:
+        # No header row — all rows are data
+        data_rows = all_rows
+        start_idx = 1
+
     result = []
-    for idx, row in enumerate(data_rows, start=2):
+    for idx, row in enumerate(data_rows, start=start_idx):
         if not any(str(v).strip() for v in row):
             continue
-        result.append(_row_to_dict(row, idx))
+        d: dict = {"_row": idx}
+        for i, col in enumerate(COLUMNS):
+            d[col] = row[i] if i < len(row) else ""
+        result.append(d)
     return result
 
 
@@ -116,8 +130,8 @@ def create_deposit(entry: dict) -> dict:
     return {"msg": "Fund deposit recorded successfully", "timestamp": entry["timestamp"]}
 
 
-def query_deposits(start: Optional[str] = None, end: Optional[str] = None, search: Optional[str] = None) -> list[dict]:
-    rows = get_all_deposits()
+def query_deposits(start: Optional[str] = None, end: Optional[str] = None, search: Optional[str] = None, use_cache: bool = True) -> list[dict]:
+    rows = get_all_deposits(use_cache=use_cache)
     if start:
         try:
             start_dt = datetime.strptime(start, "%Y-%m-%d").date()
