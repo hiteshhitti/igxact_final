@@ -263,6 +263,13 @@ def get_dashboard_data(
     """Main dashboard aggregation — /data endpoint."""
     df = load_trips_df()
 
+    # ✅ FIX: Always recalculate Received & Pending
+    if "Total Cash" in df.columns and "Total Bank" in df.columns:
+        df["Received"] = df["Total Cash"].fillna(0) + df["Total Bank"].fillna(0)
+
+    if REVENUE_COL in df.columns:
+        df["Pending"] = df[REVENUE_COL].fillna(0) - df["Received"].fillna(0)
+
     if df.empty:
         return _empty_dashboard()
 
