@@ -262,6 +262,7 @@ def get_dashboard_data(
 ) -> dict:
     """Main dashboard aggregation — /data endpoint."""
     df = load_trips_df()
+    current_year = datetime.now().year
 
     # ✅ FIX: Always recalculate Received & Pending
     if "Total Cash" in df.columns and "Total Bank" in df.columns:
@@ -272,6 +273,10 @@ def get_dashboard_data(
 
     if df.empty:
         return _empty_dashboard()
+    
+    df_graph = df.copy()
+    if "Year" in df_graph.columns:
+        df_graph = df_graph[df_graph["Year"] == current_year]
 
     # Filter
     if trip_id:
@@ -294,6 +299,7 @@ def get_dashboard_data(
     df_progress  = df[df["Status"].str.contains("progress", na=False)].copy()
     df_booked    = df[df["Status"].str.contains("booked", na=False)].copy()
     df_done      = df[df["Status"].str.contains("done", na=False)].copy()
+    df_graph_completed = df_graph[df_graph["Status"].str.contains("completed", na=False)].copy()
 
     progress_data = _pipeline_records(df_progress)
     booked_data   = _pipeline_records(df_booked)
@@ -312,18 +318,18 @@ def get_dashboard_data(
         df_view = df
 
     # ── KPIs (always off completed trips) ──────────────────────────────────
-    total_revenue = safe_float(df_completed[REVENUE_COL].sum())
-    total_expense = safe_float(df_completed["TotalExpense"].sum())
+    total_revenue = safe_float(df_graph_completed[REVENUE_COL].sum())
+    total_expense = safe_float(df_graph_completed["TotalExpense"].sum())
     total_profit = total_revenue - total_expense
     profit_pct = round((total_profit / total_revenue) * 100, 2) if total_revenue != 0 else 0.0
-    avg_deal = safe_float(df_completed[REVENUE_COL].mean())
-    avg_days = safe_float(df_completed["Number of Days"].mean()) if "Number of Days" in df_completed.columns else 0.0
-    cash_total = safe_float(df_completed["Total Cash"].sum()) if "Total Cash" in df_completed.columns else 0.0
-    bank_total = safe_float(df_completed["Total Bank"].sum()) if "Total Bank" in df_completed.columns else 0.0
+    avg_deal = safe_float(df_graph_completed[REVENUE_COL].mean())
+    avg_days = safe_float(df_graph_completed["Number of Days"].mean())
+    cash_total = safe_float(df_graph_completed["Total Cash"].sum())
+    bank_total = safe_float(df_graph_completed["Total Bank"].sum())
 
     # ── Monthly aggregation ─────────────────────────────────────────────────
     monthly_raw = (
-        df_completed.groupby("MonthNum")
+        df_graph_completed.groupby("MonthNum")
         .agg(
             Month=("MonthName", "first"),
             Trips=(REVENUE_COL, "count"),
@@ -342,7 +348,7 @@ def get_dashboard_data(
 
     # ── Vehicle aggregation ─────────────────────────────────────────────────
     veh = (
-        df_completed.groupby("Vehicle Details")
+        df_graph_completed.groupby("Vehicle Details")
         .agg(
             Trips=(REVENUE_COL, "count"),
             TotalRevenue=(REVENUE_COL, "sum"),
@@ -355,7 +361,7 @@ def get_dashboard_data(
 
     # ── Routes ─────────────────────────────────────────────────────────────
     routes = (
-        df_completed.groupby("Route")
+        df_graph_completed.groupby("Route")
         .agg(
             TripCount=(REVENUE_COL, "count"),
             TotalRevenue=(REVENUE_COL, "sum"),
@@ -366,7 +372,7 @@ def get_dashboard_data(
     )
 
     # ── Cost breakdown ──────────────────────────────────────────────────────
-    cost_totals = df_completed[EXPENSE_COLS].sum()
+    cost_totals = df_graph_completed[EXPENSE_COLS].sum()
     total_cost_sum = safe_float(cost_totals.sum())
 
     cost_data = [
@@ -398,9 +404,9 @@ def get_dashboard_data(
     ]
 
     # ── Monthly payment ─────────────────────────────────────────────────────
-    pay_cols = [c for c in ["Total Cash", "Total Bank"] if c in df_completed.columns]
+    pay_cols = [c for c in ["Total Cash", "Total Bank"] if c in df_graph_completed.columns]
     if pay_cols and "MonthNum" in df_completed.columns:
-        monthly_pay = df_completed.groupby("MonthNum")[pay_cols].sum().reset_index()
+        monthly_pay = df_graph_completed.groupby("MonthNum")[pay_cols].sum().reset_index()
         monthly_payment = []
         for r in monthly_pay.to_dict(orient="records"):
             row = {k: _safe_val(v) for k, v in r.items()}
@@ -413,7 +419,7 @@ def get_dashboard_data(
 
     # ── Monthly cost ────────────────────────────────────────────────────────
     if "MonthNum" in df_completed.columns:
-        mc = df_completed.groupby("MonthNum")[EXPENSE_COLS].sum().reset_index()
+        mc = df_graph_completed.groupby("MonthNum")[EXPENSE_COLS].sum().reset_index()
         monthly_cost_data = [{k: _safe_val(v) for k, v in r.items()} for r in mc.to_dict(orient="records")]
     else:
         monthly_cost_data = []
@@ -490,7 +496,7 @@ def get_dashboard_data(
         best_vehicle_margin = safe_float(veh.iloc[0].get("AvgMargin", 0))
 
     custs = (
-        df_completed.groupby("Customer Name")[REVENUE_COL]
+        df_graph_completed.groupby("Customer Name")[REVENUE_COL]
         .sum()
         .sort_values(ascending=False)
         .head(10)
@@ -501,7 +507,7 @@ def get_dashboard_data(
     best_route = routes.index[0] if not routes.empty else "N/A"
 
     fuel_pct = (
-        safe_float(df_completed["Fuel"].sum()) / total_cost_sum * 100
+        safe_float(df_graph_completed["Fuel"].sum()) / total_cost_sum * 100
         if "Fuel" in df_completed.columns and total_cost_sum
         else 0.0
     )
@@ -547,7 +553,7 @@ def get_dashboard_data(
 
     # ── Profit by duration ──────────────────────────────────────────────────
     if "Number of Days" in df_completed.columns:
-        pbd = df_completed.groupby("Number of Days")["CalcProfit"].sum().reset_index()
+        pbd = df_graph_completed.groupby("Number of Days")["CalcProfit"].sum().reset_index()
         profit_duration_data = [
             {"days": int(r["Number of Days"]), "profit": safe_float(r["CalcProfit"])}
             for _, r in pbd.iterrows()
