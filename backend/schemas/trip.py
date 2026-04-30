@@ -40,10 +40,16 @@ class TripCreate(BaseModel):
     other_expenses:   float = Field(0, alias="Other Expenses",   ge=0)
 
     # ── Payment ───────────────────────────────────────────────────────────────
-    advance_cash: float = Field(0, alias="Booking Amt/Advance Cash", ge=0)
-    advance_bank: float = Field(0, alias="Booking Amt/Advance Bank", ge=0)
-    total_cash:   float = Field(0, alias="Total Cash",               ge=0)
-    total_bank:   float = Field(0, alias="Total Bank",               ge=0)
+    advance_cash:    float = Field(0, alias="Booking Amt/Advance Cash",  ge=0)
+    advance_bank:    float = Field(0, alias="Booking Amt/Advance Bank",  ge=0)
+    pay2_cash:       float = Field(0, alias="2nd Payment Cash Bank",     ge=0)
+    pay2_bank:       float = Field(0, alias="2nd Payment Bank",          ge=0)
+    final_cash:      float = Field(0, alias="Final Payment Mode Cash",   ge=0)
+    final_bank:      float = Field(0, alias="Final Payment Mode Bank",   ge=0)
+    total_cash:      float = Field(0, alias="Total Cash",                ge=0)
+    total_bank:      float = Field(0, alias="Total Bank",                ge=0)
+    total:           float = Field(0, alias="Total",                     ge=0)
+    per_day_cost:    float = Field(0, alias="Per Day Cost",              ge=0)
 
     # ── Meta ──────────────────────────────────────────────────────────────────
     number_of_days:  int            = Field(1,        alias="Number of Days", ge=0, le=365)
@@ -56,7 +62,7 @@ class TripCreate(BaseModel):
     def validate_status(cls, v):
         if not v:
             return "booked"
-        allowed = {"booked", "progress", "completed", "cancelled"}
+        allowed = {"booked", "progress", "completed", "cancelled", "done"}
         cleaned = str(v).lower().strip()
         if cleaned not in allowed:
             raise ValueError(f"Status must be one of: {', '.join(sorted(allowed))}")
@@ -95,7 +101,9 @@ class TripCreate(BaseModel):
 
     @validator("deal_price", "fuel", "tolls_taxes", "parking",
                "driver_allowance", "sales_commission", "other_expenses",
-               "advance_cash", "advance_bank", "total_cash", "total_bank",
+               "advance_cash", "advance_bank", "pay2_cash", "pay2_bank",
+               "final_cash", "final_bank", "total_cash", "total_bank",
+               "total", "per_day_cost",
                pre=True)
     def coerce_numeric(cls, v):
         if v is None or v == "":
@@ -152,7 +160,7 @@ class DashboardQueryParams(BaseModel):
     def validate_status(cls, v):
         if not v:
             return "all"
-        allowed = {"all", "completed", "progress", "booked"}
+        allowed = {"all", "completed", "progress", "booked", "done"}
         if str(v) not in allowed:
             raise ValueError(f"status must be one of: {', '.join(sorted(allowed))}")
         return str(v)
