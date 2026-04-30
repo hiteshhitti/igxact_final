@@ -30,10 +30,11 @@ const AUTO_CALC_COLS = new Set(["Total Cash","Total Bank","Total","Per Day Cost"
 
 // ── Field-level validation ────────────────────────────────────────────────────
 function validateForm(form: any): string | null {
-  if (!form["Customer Name"]?.trim())  return "Customer Name is required";
-  if (!form["Trip From"]?.trim())      return "Trip From is required";
-  if (!form["Trip TO"]?.trim())        return "Trip To is required";
-  if (!form["Vehicle Details"]?.trim()) return "Vehicle is required";
+  const str = (v: any) => (v == null ? "" : String(v)).trim();
+  if (!str(form["Customer Name"]))   return "Customer Name is required";
+  if (!str(form["Trip From"]))       return "Trip From is required";
+  if (!str(form["Trip TO"]))         return "Trip To is required";
+  if (!str(form["Vehicle Details"])) return "Vehicle is required";
   const deal = Number(form["Deal Price"]);
   if (!deal || deal <= 0)              return "Deal Price must be greater than 0";
   return null;
@@ -274,7 +275,12 @@ export default function TripsPage() {
   };
 
   const handleEdit = (trip: any) => {
-    const editableForm: any = { ...trip };
+    // Sanitize all values — sheet can return numbers/nulls, inputs need strings
+    const editableForm: any = {};
+    Object.keys(trip).forEach(k => {
+      const v = trip[k];
+      editableForm[k] = v == null ? "" : v;
+    });
     editableForm["Start Date"] = convertToInputDate(trip["Start Date"] || "");
     editableForm["End date"]   = convertToInputDate(trip["End date"]   || "");
     setEditingId(trip["trip id"]);
