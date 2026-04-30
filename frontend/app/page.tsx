@@ -168,10 +168,13 @@ export default function Home() {
   const monthTargets  = data?.month_targets || [];
   const progressTrips = data?.pipeline?.progress || [];
   const bookedTrips   = data?.pipeline?.booked   || [];
+  const doneTrips     = data?.pipeline?.done     || [];
   const progressTotal    = progressTrips.reduce((a: number, b: any) => a + (b["Deal Price"] || 0), 0);
   const progressReceived = progressTrips.reduce((a: number, b: any) => a + (b["Received"]   || 0), 0);
   const bookedTotal      = bookedTrips.reduce((a: number, b: any) => a + (b["Deal Price"] || 0), 0);
   const bookedReceived   = bookedTrips.reduce((a: number, b: any) => a + (b["Received"]   || 0), 0);
+  const doneTotal        = doneTrips.reduce((a: number, b: any) => a + (b["Deal Price"] || 0), 0);
+  const doneReceived     = doneTrips.reduce((a: number, b: any) => a + (b["Received"]   || 0), 0);
   const formatTrips  = (v: any) => `${v ?? 0} trips`;
 
   return (
@@ -686,6 +689,25 @@ export default function Home() {
               </div>
             </div>
           </div>
+        </div>
+
+        <div className="pipeline-section crm-fade" style={{ marginTop: 24 }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:12 }}>
+            <div>
+              <h2 className="section-title" style={{ color:"#8b5cf6" }}>🏁 Done</h2>
+              <p className="section-subtitle">{doneTrips.length} trip{doneTrips.length !== 1 ? "s" : ""} awaiting expenses</p>
+            </div>
+            <div style={{ display:"flex", gap:16, fontSize:13 }}>
+              <span style={{ color:"var(--text-muted)" }}>Deal: <strong style={{ color:"var(--text-primary)" }}>₹{doneTotal.toLocaleString("en-IN")}</strong></span>
+              <span style={{ color:"var(--text-muted)" }}>Received: <strong style={{ color:"var(--accent-green)" }}>₹{doneReceived.toLocaleString("en-IN")}</strong></span>
+            </div>
+          </div>
+          {doneTrips.length === 0
+            ? <div className="empty-glass" style={{ fontSize:13 }}>No done trips</div>
+            : <div className="trip-grid">
+                {doneTrips.map((trip: any, i: number) => <TripCard key={i} trip={trip} onClick={() => setSelectedTrip(trip)} />)}
+              </div>
+          }
         </div>
       )}
     </div>

@@ -196,6 +196,16 @@ export default function TripsPage() {
       return;
     }
 
+    // ── Expense check when marking Completed ────────────────────────────
+    if (form["Status"] === "completed") {
+      const EXPENSE_FIELDS = ["Fuel", "Tolls & Taxes", "Parking", "Driver Allowance", "Other Expenses", "Sales Commission"];
+      const missingExpenses = EXPENSE_FIELDS.filter(f => !form[f] || num(form[f]) === 0);
+      if (missingExpenses.length > 0) {
+        const msg = `Cannot mark Completed — missing expenses: ${missingExpenses.join(", ")}. Mark as Done if expenses are pending.`;
+        setFormErrors(msg); toast.error(msg); return;
+      }
+    }
+
     // ── Payment check when marking Completed ─────────────────────────────
     if (form["Status"] === "completed") {
       const deal = num(form["Deal Price"]);
@@ -335,6 +345,7 @@ export default function TripsPage() {
                     <select className="input-field" value={form[col] || "booked"} onChange={e => setForm((p: any) => ({ ...p, [col]: e.target.value }))}>
                       <option value="booked">Booked</option>
                       <option value="progress">In Progress</option>
+                      <option value="done">Done</option>
                       <option value="completed">Completed</option>
                       <option value="cancelled">Cancelled</option>
                     </select>
@@ -485,7 +496,7 @@ export default function TripsPage() {
                       const tOther  = Number(trip["Other Expenses"] || 0);
                       const tProfit = tDeal - (tFuel + tTolls + tPark + tDriver + tComm + tOther);
                       const status  = (trip["Status"] || "").toLowerCase();
-                      const statusColor = status.includes("completed") ? "var(--accent-green)" : status.includes("progress") ? "var(--accent-orange)" : "var(--accent-primary)";
+                      const statusColor = status.includes("completed") ? "var(--accent-green)" : status.includes("progress") ? "var(--accent-orange)" : status.includes("done") ? "#8b5cf6" : "var(--accent-primary)";
                       return (
                         <tr key={i} style={{ borderBottom: "1px solid var(--border-subtle)", background: i % 2 === 0 ? "transparent" : "rgba(0,0,0,0.015)" }}>
                           <td style={{ padding: "10px 12px", fontWeight: 600 }}>{trip["trip id"]}</td>

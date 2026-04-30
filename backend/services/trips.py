@@ -240,13 +240,15 @@ def query_trips(
     df = filter_trips(df, start, end, trip_id, mobile)
 
     df_completed = df[df["Status"].str.contains("completed", na=False)]
-    df_progress = df[df["Status"].str.contains("progress", na=False)]
-    df_booked = df[df["Status"].str.contains("booked", na=False)]
+    df_progress  = df[df["Status"].str.contains("progress", na=False)]
+    df_booked    = df[df["Status"].str.contains("booked", na=False)]
+    df_done      = df[df["Status"].str.contains("done", na=False)]
 
     return {
         "completed": _safe_summary(df_completed),
-        "progress": _safe_summary(df_progress),
-        "booked": _safe_summary(df_booked),
+        "progress":  _safe_summary(df_progress),
+        "booked":    _safe_summary(df_booked),
+        "done":      _safe_summary(df_done),
         "trips": df.fillna("").to_dict(orient="records"),
     }
 
@@ -282,11 +284,13 @@ def get_dashboard_data(
 
     # Split by status
     df_completed = df[df["Status"].str.contains("completed", na=False)].copy()
-    df_progress = df[df["Status"].str.contains("progress", na=False)].copy()
-    df_booked = df[df["Status"].str.contains("booked", na=False)].copy()
+    df_progress  = df[df["Status"].str.contains("progress", na=False)].copy()
+    df_booked    = df[df["Status"].str.contains("booked", na=False)].copy()
+    df_done      = df[df["Status"].str.contains("done", na=False)].copy()
 
     progress_data = _pipeline_records(df_progress)
-    booked_data = _pipeline_records(df_booked)
+    booked_data   = _pipeline_records(df_booked)
+    done_data     = _pipeline_records(df_done)
 
     # Status filter for table view
     if status == "completed":
@@ -295,6 +299,8 @@ def get_dashboard_data(
         df_view = df_progress
     elif status == "booked":
         df_view = df_booked
+    elif status == "done":
+        df_view = df_done
     else:
         df_view = df
 
@@ -557,7 +563,8 @@ def get_dashboard_data(
         },
         "pipeline": {
             "progress": progress_data,
-            "booked": booked_data,
+            "booked":   booked_data,
+            "done":     done_data,
         },
         "pipeline_summary": {
             "progress_total": safe_float(sum(x.get(REVENUE_COL, 0) for x in progress_data)),
