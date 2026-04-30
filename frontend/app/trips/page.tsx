@@ -283,7 +283,7 @@ export default function TripsPage() {
     });
     editableForm["Start Date"] = convertToInputDate(trip["Start Date"] || "");
     editableForm["End date"]   = convertToInputDate(trip["End date"]   || "");
-    setEditingId(trip["trip id"]);
+    setEditingId(Number(trip["trip id"]) || null);
     setForm(editableForm);
     window.scrollTo({ top: 0, behavior: "smooth" });
   };

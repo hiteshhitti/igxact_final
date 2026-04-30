@@ -93,7 +93,7 @@ def create_trip(body: TripCreate, user=Depends(require_admin)):
 
 
 @app.put("/update-trip/{trip_id}")
-def edit_trip(trip_id: int, body: TripUpdate, user=Depends(require_admin)):
+def edit_trip(trip_id: int, body: TripUpdate, user=Depends(verify_token)):
     if trip_id <= 0:
         raise HTTPException(status_code=400, detail="trip_id must be a positive integer")
     return update_trip(trip_id, body.dict(by_alias=True))
