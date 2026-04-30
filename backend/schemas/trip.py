@@ -22,7 +22,7 @@ class TripCreate(BaseModel):
     trip_from:       str   = Field(..., alias="Trip From",        min_length=1, max_length=100)
     trip_to:         str   = Field(..., alias="Trip TO",          min_length=1, max_length=100)
     deal_price:      float = Field(..., alias="Deal Price",       ge=0)
-    vehicle_details: str   = Field(..., alias="Vehicle Details",  min_length=1, max_length=100)
+    vehicle_details: Optional[str] = Field(None, alias="Vehicle Details", max_length=100)
 
     # ── Optional contact ──────────────────────────────────────────────────────
     contact_number: Optional[str] = Field(None, alias="Cust. Contact Number", max_length=20)
@@ -57,14 +57,6 @@ class TripCreate(BaseModel):
     driver_name:     Optional[str]  = Field(None,     alias="Driver Name",    max_length=100)
     driver_contact:  Optional[str]  = Field(None,     alias="Driver Contact", max_length=20)
     remarks:         Optional[str]  = Field(None,     alias="Remarks",        max_length=500)
-
-    @validator("customer_name", "trip_from", "trip_to", "vehicle_details",
-               "driver_name", "driver_contact", "remarks", "contact_number",
-               pre=True)
-    def coerce_string(cls, v):
-        if v is None:
-            return None
-        return str(v).strip()
 
     @validator("status", pre=True)
     def validate_status(cls, v):
@@ -120,6 +112,14 @@ class TripCreate(BaseModel):
             return float(str(v).replace(",", "").replace("₹", "").strip())
         except (ValueError, TypeError):
             return 0.0
+
+    @validator("vehicle_details", "customer_name", "trip_from", "trip_to",
+               "driver_name", "driver_contact", "remarks",
+               pre=True, always=True)
+    def coerce_to_str(cls, v):
+        if v is None or v == "" or v == []:
+            return ""
+        return str(v).strip()
 
     class Config:
         populate_by_name = True  # accept both field name and alias
