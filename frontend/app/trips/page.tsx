@@ -227,6 +227,7 @@ export default function TripsPage() {
     }
 
     setSaving(true);
+    const deal      = num(form["Deal Price"]);
     const advCash   = num(form["Booking Amt/Advance Cash"]);
     const advBank   = num(form["Booking Amt/Advance Bank"]);
     const pay2Cash  = num(form["2nd Payment Cash Bank"]);
