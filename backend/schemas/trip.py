@@ -58,6 +58,14 @@ class TripCreate(BaseModel):
     driver_contact:  Optional[str]  = Field(None,     alias="Driver Contact", max_length=20)
     remarks:         Optional[str]  = Field(None,     alias="Remarks",        max_length=500)
 
+    @validator("customer_name", "trip_from", "trip_to", "vehicle_details",
+               "driver_name", "driver_contact", "remarks", "contact_number",
+               pre=True)
+    def coerce_string(cls, v):
+        if v is None:
+            return None
+        return str(v).strip()
+
     @validator("status", pre=True)
     def validate_status(cls, v):
         if not v:
