@@ -130,7 +130,7 @@ export default function Home() {
       return;
     }
     setLoading(true); setError(null);
-    const path = year ? `/data?year=${year}` : "/data";
+    const path = year === -1 ? "/data?year=all" : year ? `/data?year=${year}` : "/data";
     apiFetch(path)
       .then(async (res) => {
         if (!res.ok) { const err = await res.json().catch(() => ({})); throw new Error(err.detail || `Server error (${res.status})`); }
@@ -278,9 +278,10 @@ export default function Home() {
               className="input-field"
               style={{ width: "auto", padding: "8px 14px", fontSize: 13 }}
               value={year || ""}
-              onChange={(e) => setYear(e.target.value ? Number(e.target.value) : null)}
+              onChange={(e) => setYear(e.target.value === "all" ? -1 : e.target.value ? Number(e.target.value) : null)}
             >
               <option value="">Latest Year ({data?.active_year ?? "all"})</option>
+              <option value="all">All Years</option>
               {years.map((y) => <option key={y} value={y}>{y}</option>)}
             </select>
             <button className="btn-ghost" style={{ fontSize: 13 }} onClick={() => push("/insights")}>View insights →</button>

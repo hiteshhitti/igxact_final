@@ -132,18 +132,22 @@ def trips_view(
 # ─── Dashboard ────────────────────────────────────────────────────────────────
 @app.get("/data")
 def get_data(
-    year:     int = Query(None),
+    year:     str = Query(None),
     month:    int = Query(None),
     status:   str = Query("all"),
     trip_id:  str = Query(None),
     mobile:   str = Query(None),
     user=Depends(verify_token),
 ):
+    # year="all" means no year filter (show all years)
+    year_int = None if (not year or year == "all") else int(year)
+    show_all = (year == "all")
     params = DashboardQueryParams(
-        year=year, month=month, status=status, trip_id=trip_id, mobile=mobile
+        year=year_int, month=month, status=status, trip_id=trip_id, mobile=mobile
     )
     return get_dashboard_data(
-        params.year, params.month, params.status, params.trip_id, params.mobile
+        params.year, params.month, params.status, params.trip_id, params.mobile,
+        show_all_years=show_all
     )
 
 
