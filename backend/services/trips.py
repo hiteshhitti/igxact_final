@@ -263,15 +263,19 @@ def get_dashboard_data(
     """Main dashboard aggregation — /data endpoint."""
     df = load_trips_df()
 
-    # ✅ FIX: Always recalculate Received & Pending
-    if "Total Cash" in df.columns and "Total Bank" in df.columns:
-        df["Received"] = df["Total Cash"].fillna(0) + df["Total Bank"].fillna(0)
-
-    if REVENUE_COL in df.columns:
-        df["Pending"] = df[REVENUE_COL].fillna(0) - df["Received"].fillna(0)
-
     if df.empty:
         return _empty_dashboard()
+
+    # Build years list from FULL unfiltered df
+    all_years = sorted(df["Year"].dropna().unique().astype(int).tolist(), reverse=True) if "Year" in df.columns else []
+    years = all_years
+
+    # Default "Latest year" = most recent year with completed trips
+    effective_year = year
+    if not effective_year and "Year" in df.columns:
+        df_comp = df[df["Status"].str.contains("completed", na=False)]
+        if not df_comp.empty:
+            effective_year = int(df_comp["Year"].dropna().max())
 
     # Filter
     if trip_id:
@@ -279,12 +283,10 @@ def get_dashboard_data(
     else:
         if mobile and "Cust. Contact Number" in df.columns:
             df = df[df["Cust. Contact Number"].str.contains(mobile.replace(" ", ""), na=False)]
-        if year and "Year" in df.columns:
-            df = df[df["Year"] == year]
+        if effective_year and "Year" in df.columns:
+            df = df[df["Year"] == effective_year]
         if month and "MonthNum" in df.columns:
             df = df[df["MonthNum"] == month]
-
-    years = sorted(df["Year"].dropna().unique().tolist()) if "Year" in df.columns else []
 
     if df.empty:
         return {**_empty_dashboard(), "years": years}
@@ -558,6 +560,7 @@ def get_dashboard_data(
     return {
         "success": True,
         "years": [int(y) for y in years],
+        "active_year": int(effective_year) if effective_year else None,
         "month_targets": month_targets,
         "kpi": {
             "total_revenue": round(total_revenue, 2),

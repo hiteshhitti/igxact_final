@@ -280,7 +280,7 @@ export default function Home() {
               value={year || ""}
               onChange={(e) => setYear(e.target.value ? Number(e.target.value) : null)}
             >
-              <option value="">Latest year</option>
+              <option value="">Latest Year ({data?.active_year ?? "all"})</option>
               {years.map((y) => <option key={y} value={y}>{y}</option>)}
             </select>
             <button className="btn-ghost" style={{ fontSize: 13 }} onClick={() => push("/insights")}>View insights →</button>
@@ -388,23 +388,12 @@ export default function Home() {
               <span style={{ color:"var(--text-muted)" }}>Received: <strong style={{ color:"var(--accent-green)" }}>₹{doneReceived.toLocaleString("en-IN")}</strong></span>
             </div>
           </div>
-            {doneTrips.length === 0
-              ? <div className="empty-glass" style={{ fontSize:13 }}>No done trips</div>
-              : (
-                <div style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))",
-                  gap: 14,
-                  maxHeight: 420,
-                  overflowY: "auto",
-                  paddingRight: 4
-                }}>
-                  {doneTrips.map((trip: any, i: number) => (
-                    <TripCard key={i} trip={trip} onClick={() => setSelectedTrip(trip)} />
-                  ))}
-                </div>
-              )
-            }
+          {doneTrips.length === 0
+            ? <div className="empty-glass" style={{ fontSize:13 }}>No done trips</div>
+            : <div className="trip-grid">
+                {doneTrips.map((trip: any, i: number) => <TripCard key={i} trip={trip} onClick={() => setSelectedTrip(trip)} />)}
+              </div>
+          }
         </div>
 
         {/* ── Revenue & Profit chart ──────────────────────────────────────── */}
