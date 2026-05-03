@@ -325,6 +325,10 @@ def get_dashboard_data(
     bank_total = safe_float(df_completed["Total Bank"].sum()) if "Total Bank" in df_completed.columns else 0.0
 
     # ── Monthly aggregation ─────────────────────────────────────────────────
+    # For targets: always use ALL years unfiltered so cards always show data
+    df_all = load_trips_df()
+    df_completed_all = df_all[df_all["Status"].str.contains("completed", na=False)].copy() if not df_all.empty else df_completed
+
     monthly_raw = (
         df_completed.groupby("MonthNum")
         .agg(
@@ -529,10 +533,21 @@ def get_dashboard_data(
     # ── Month targets ───────────────────────────────────────────────────────
     TARGET = 250_000
     current_month = datetime.now().month
+    # Build a monthly lookup from ALL completed trips (unfiltered) for target cards
+    monthly_all = (
+        df_completed_all.groupby("MonthNum")
+        .agg(
+            Month=("MonthName", "first"),
+            Trips=(REVENUE_COL, "count"),
+            Revenue=(REVENUE_COL, "sum"),
+        )
+        .reset_index()
+    ) if not df_completed_all.empty else pd.DataFrame()
+
     month_targets = []
     for i in range(3):
         m = ((current_month - 1 + i) % 12) + 1
-        row_data = monthly_raw[monthly_raw["MonthNum"] == m]
+        row_data = monthly_all[monthly_all["MonthNum"] == m] if not monthly_all.empty else pd.DataFrame()
         if not row_data.empty:
             rev = safe_float(row_data.iloc[0]["Revenue"])
             trips_n = int(row_data.iloc[0]["Trips"])
