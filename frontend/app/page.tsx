@@ -280,7 +280,7 @@ export default function Home() {
               value={year || ""}
               onChange={(e) => setYear(e.target.value === "all" ? -1 : e.target.value ? Number(e.target.value) : null)}
             >
-              <option value="">Latest Year {data?.active_year ? `(${data.active_year})` : ""}</option>
+              <option value="">Latest Year {data?.active_year && !data?.selected_year ? `(${data.active_year})` : ""}</option>
               <option value="all">All Years</option>
               {years.map((y) => <option key={y} value={y}>{y}</option>)}
             </select>

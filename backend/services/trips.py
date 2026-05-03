@@ -268,7 +268,13 @@ def get_dashboard_data(
         return _empty_dashboard()
 
     # Build years list from FULL unfiltered df
-    all_years = sorted(df["Year"].dropna().unique().astype(int).tolist(), reverse=True) if "Year" in df.columns else []
+    try:
+        all_years = sorted(
+            [int(float(y)) for y in df["Year"].dropna().unique() if str(y).strip() not in ("", "nan")],
+            reverse=True
+        ) if "Year" in df.columns else []
+    except Exception:
+        all_years = []
     years = all_years
 
     # Determine effective year — skip if show_all_years=True
@@ -276,7 +282,7 @@ def get_dashboard_data(
     if not show_all_years and not effective_year and "Year" in df.columns:
         df_comp = df[df["Status"].str.contains("completed", na=False)]
         if not df_comp.empty:
-            effective_year = int(df_comp["Year"].dropna().max())
+            effective_year = int(float(df_comp["Year"].dropna().max()))
 
     # Filter
     if trip_id:
@@ -577,6 +583,7 @@ def get_dashboard_data(
         "success": True,
         "years": [int(y) for y in years],
         "active_year": "all" if show_all_years else (int(effective_year) if effective_year else None),
+        "selected_year": int(year) if year else None,
         "month_targets": month_targets,
         "kpi": {
             "total_revenue": round(total_revenue, 2),
