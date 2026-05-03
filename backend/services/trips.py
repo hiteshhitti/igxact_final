@@ -285,7 +285,7 @@ def get_dashboard_data(
         if mobile and "Cust. Contact Number" in df.columns:
             df = df[df["Cust. Contact Number"].str.contains(mobile.replace(" ", ""), na=False)]
         if not show_all_years and effective_year and "Year" in df.columns:
-            df = df[df["Year"] == effective_year]
+            df = df[df["Year"].astype(str).str.strip().str.split(".").str[0] == str(effective_year)]
         if month and "MonthNum" in df.columns:
             df = df[df["MonthNum"] == month]
 
