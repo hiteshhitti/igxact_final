@@ -411,6 +411,19 @@ def get_dashboard_data(
     else:
         df_view = df
 
+    # ── Overall all-time stats (all years, all statuses) ────────────────────
+    df_all_time = load_trips_df()
+    if not df_all_time.empty:
+        overall_total_deal   = safe_float(df_all_time[REVENUE_COL].sum())
+        overall_total_trips  = len(df_all_time)
+        overall_received     = safe_float(df_all_time["Received"].sum()) if "Received" in df_all_time.columns else 0.0
+        overall_pending      = safe_float(df_all_time["Pending"].sum()) if "Pending" in df_all_time.columns else 0.0
+    else:
+        overall_total_deal  = 0.0
+        overall_total_trips = 0
+        overall_received    = 0.0
+        overall_pending     = 0.0
+
     # ── KPIs (always off completed trips) ──────────────────────────────────
     total_revenue = safe_float(df_completed[REVENUE_COL].sum())
     total_expense = safe_float(df_completed["TotalExpense"].sum())
@@ -686,6 +699,12 @@ def get_dashboard_data(
         "years": [int(y) for y in years],
         "active_year": "all" if show_all_years else (int(effective_year) if effective_year else None),
         "selected_year": int(year) if year else None,
+        "overall": {
+            "total_deal":   round(overall_total_deal, 2),
+            "total_trips":  overall_total_trips,
+            "received":     round(overall_received, 2),
+            "pending":      round(overall_pending, 2),
+        },
         "month_targets": month_targets,
         "kpi": {
             "total_revenue": round(total_revenue, 2),
