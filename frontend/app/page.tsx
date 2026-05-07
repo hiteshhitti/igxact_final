@@ -319,6 +319,7 @@ export default function Home() {
         {/* ── KPI Grid ───────────────────────────────────────────────────── */}
         <section className="section fade-up" style={{ animationDelay: "0.05s" }}>
           <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(190px, 1fr))", gap: 14 }}>
+            <KpiCard label="All-Time Total Deal" value={`₹${(data?.overall?.total_deal || 0).toLocaleString("en-IN")}`} accent="#7c3aed" icon="🌐" />
             <KpiCard label="Total Revenue"  value={`₹${(kpi.total_revenue || 0).toLocaleString("en-IN")}`} accent="var(--accent-primary)" icon="💰" />
             <KpiCard label="Total Profit"   value={`₹${(kpi.total_profit  || 0).toLocaleString("en-IN")}`} accent="var(--accent-green)"   icon="📈" />
             <KpiCard label="Other Expenses" value={`₹${otherExpenses.toLocaleString("en-IN")}`}            accent="#f43f5e"               icon="📉" />
@@ -372,45 +373,6 @@ export default function Home() {
               })}
             </div>
           </section>
-        )}
-
-        {/* ── Overall All-Time Summary Card ──────────────────────────────── */}
-        {data?.overall && (
-          <div style={{
-            background: "linear-gradient(135deg, rgba(37,99,235,0.08), rgba(124,58,237,0.08))",
-            border: "1px solid rgba(37,99,235,0.18)",
-            borderRadius: 16, padding: "20px 28px", marginBottom: 8,
-            display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(180px,1fr))", gap: 20,
-          }}>
-            <div>
-              <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:6 }}>🌐 All-Time Total Deal</p>
-              <p style={{ fontFamily:"var(--font-display)", fontSize:26, fontWeight:800, color:"var(--accent-primary)" }}>
-                ₹{Number(data.overall.total_deal).toLocaleString("en-IN")}
-              </p>
-              <p style={{ fontSize:12, color:"var(--text-muted)", marginTop:4 }}>{data.overall.total_trips} trips across all years</p>
-            </div>
-            <div>
-              <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:6 }}>💰 Total Received</p>
-              <p style={{ fontFamily:"var(--font-display)", fontSize:26, fontWeight:800, color:"var(--accent-green)" }}>
-                ₹{Number(data.overall.received).toLocaleString("en-IN")}
-              </p>
-            </div>
-            <div>
-              <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:6 }}>⏳ Total Pending</p>
-              <p style={{ fontFamily:"var(--font-display)", fontSize:26, fontWeight:800, color: data.overall.pending > 0 ? "var(--accent-red)" : "var(--accent-green)" }}>
-                ₹{Number(data.overall.pending).toLocaleString("en-IN")}
-              </p>
-            </div>
-            <div style={{ display:"flex", flexDirection:"column", justifyContent:"center" }}>
-              <p style={{ fontSize:11, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.07em", marginBottom:8 }}>All Statuses</p>
-              <div style={{ display:"flex", flexWrap:"wrap", gap:6 }}>
-                {["Booked","Progress","Done","Completed"].map(s => (
-                  <span key={s} style={{ fontSize:11, fontWeight:600, padding:"3px 10px", borderRadius:20,
-                    background:"rgba(37,99,235,0.08)", color:"var(--accent-primary)" }}>{s}</span>
-                ))}
-              </div>
-            </div>
-          </div>
         )}
 
         {/* ── In Progress ─────────────────────────────────────────────────── */}
