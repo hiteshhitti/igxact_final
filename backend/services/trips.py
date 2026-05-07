@@ -540,13 +540,14 @@ def get_dashboard_data(
     TARGET = 250_000
     current_year  = datetime.now().year
     current_month = datetime.now().month
-    # Filter to current calendar year only for accurate monthly targets
-    if not df_completed_all.empty and "Year" in df_completed_all.columns:
-        df_targets = df_completed_all[
-            df_completed_all["Year"].astype(str).str.strip().str.split(".").str[0] == str(current_year)
+    # Filter to current calendar year — ALL statuses (booked, progress, done, completed)
+    df_all_statuses = load_trips_df()
+    if not df_all_statuses.empty and "Year" in df_all_statuses.columns:
+        df_targets = df_all_statuses[
+            df_all_statuses["Year"].astype(str).str.strip().str.split(".").str[0] == str(current_year)
         ]
     else:
-        df_targets = df_completed_all
+        df_targets = df_all_statuses
 
     monthly_all = (
         df_targets.groupby("MonthNum")
