@@ -166,6 +166,30 @@ export default function Home() {
   const otherExpenses = (data?.cost_breakdown || []).find((c: any) => c.name === "Other Expenses")?.value || 0;
   const insights      = data?.insights || {};
   const monthTargets  = data?.month_targets || [];
+  const [showTargetModal, setShowTargetModal] = useState(false);
+  const [targetYear, setTargetYear]           = useState(new Date().getFullYear());
+  const [allTargets, setAllTargets]           = useState<any[]>([]);
+  const [savingTarget, setSavingTarget]       = useState(false);
+  const [role]                                = useState(() => (sessionStorage.getItem("role") || "").toLowerCase());
+
+  const fetchTargets = async (yr: number) => {
+    try {
+      const res = await apiFetch(`/targets?year=${yr}`);
+      const d = await res.json();
+      setAllTargets(d.targets || []);
+    } catch {}
+  };
+
+  const saveTarget = async (monthNum: number, amount: number) => {
+    setSavingTarget(true);
+    try {
+      const res = await apiFetch("/targets", { method: "POST", body: JSON.stringify({ year: targetYear, month_num: monthNum, target_amount: amount }) });
+      if (!res.ok) { const d = await res.json(); toast.error(d.detail); return; }
+      toast.success("Target saved!");
+      fetchTargets(targetYear);
+    } catch (e: any) { toast.error(e.message); }
+    finally { setSavingTarget(false); }
+  };
   const progressTrips = data?.pipeline?.progress || [];
   const bookedTrips   = data?.pipeline?.booked   || [];
   const doneTrips     = data?.pipeline?.done     || [];
@@ -306,9 +330,18 @@ export default function Home() {
         {/* ── Monthly Targets ─────────────────────────────────────────────── */}
         {monthTargets.length > 0 && (
           <section className="section fade-up" style={{ animationDelay: "0.10s" }}>
-            <div className="section-header">
-              <h2 className="section-title">Monthly Targets</h2>
-              <p className="section-subtitle">Track performance against your revenue goals</p>
+            <div className="section-header" style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <div>
+                <h2 className="section-title">Monthly Targets</h2>
+                <p className="section-subtitle">Track performance against your revenue goals</p>
+              </div>
+              {role === "admin" && (
+                <button onClick={() => { fetchTargets(targetYear); setShowTargetModal(true); }} style={{
+                  background:"rgba(37,99,235,0.1)", border:"1px solid rgba(37,99,235,0.2)",
+                  borderRadius:10, padding:"7px 16px", cursor:"pointer",
+                  fontSize:13, color:"var(--accent-primary)", fontWeight:600,
+                }}>⚙️ Set Targets</button>
+              )}
             </div>
             <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
               {monthTargets.map((m: any, i: number) => {
@@ -711,6 +744,71 @@ export default function Home() {
           </div>
         </div>
 
+      )}
+
+      {/* ── Set Targets Modal ───────────────────────────────────────────── */}
+      {showTargetModal && (
+        <div onClick={() => setShowTargetModal(false)} style={{
+          position:"fixed", inset:0, background:"rgba(0,0,0,0.45)",
+          backdropFilter:"blur(6px)", zIndex:1000,
+          display:"flex", alignItems:"center", justifyContent:"center", padding:20,
+        }}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background:"rgba(255,255,255,0.97)", borderRadius:18,
+            padding:"28px 32px", width:"100%", maxWidth:560,
+            maxHeight:"90vh", overflowY:"auto",
+            boxShadow:"0 20px 60px rgba(0,0,0,0.20)",
+          }}>
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+              <div>
+                <h2 style={{ fontFamily:"var(--font-display)", fontSize:20, fontWeight:800 }}>⚙️ Set Monthly Targets</h2>
+                <p style={{ fontSize:12, color:"var(--text-muted)", marginTop:3 }}>Click any amount and Tab/click away to save</p>
+              </div>
+              <button onClick={() => setShowTargetModal(false)} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:"var(--text-muted)" }}>×</button>
+            </div>
+            <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:20 }}>
+              <label style={{ fontSize:12, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.07em" }}>Year</label>
+              <select value={targetYear} onChange={e => { const y = Number(e.target.value); setTargetYear(y); fetchTargets(y); }}
+                style={{ padding:"7px 12px", borderRadius:8, border:"1px solid rgba(0,0,0,0.12)", fontSize:14, background:"rgba(0,0,0,0.03)", fontFamily:"var(--font-body)" }}>
+                {[new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1].map(y => (
+                  <option key={y} value={y}>{y}</option>
+                ))}
+              </select>
+            </div>
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
+              {allTargets.map((t: any) => (
+                <div key={t.month_num} style={{
+                  display:"grid", gridTemplateColumns:"120px 1fr auto",
+                  alignItems:"center", gap:12,
+                  background:"rgba(0,0,0,0.025)", borderRadius:10, padding:"10px 14px",
+                }}>
+                  <p style={{ fontWeight:600, fontSize:14, color:"var(--text-primary)" }}>{t.month_name}</p>
+                  <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+                    <span style={{ fontSize:14, color:"var(--text-muted)" }}>₹</span>
+                    <input
+                      type="number"
+                      defaultValue={t.target_amount}
+                      onBlur={e => saveTarget(t.month_num, Number(e.target.value))}
+                      style={{
+                        width:"100%", padding:"7px 10px", borderRadius:8,
+                        border:"1px solid rgba(0,0,0,0.10)", background:"white",
+                        fontSize:14, fontFamily:"var(--font-body)", outline:"none",
+                      }}
+                    />
+                  </div>
+                  <span style={{
+                    fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:20,
+                    background: t.target_amount > 0 ? "rgba(37,99,235,0.1)" : "rgba(0,0,0,0.06)",
+                    color: t.target_amount > 0 ? "var(--accent-primary)" : "var(--text-muted)",
+                    whiteSpace:"nowrap",
+                  }}>
+                    {t.target_amount > 0 ? `₹${Number(t.target_amount).toLocaleString("en-IN")}` : "Default"}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );

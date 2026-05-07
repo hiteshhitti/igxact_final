@@ -537,7 +537,7 @@ def get_dashboard_data(
     }
 
     # ── Month targets ───────────────────────────────────────────────────────
-    TARGET = 250_000
+    from services.targets import get_target_for_month
     current_year  = datetime.now().year
     current_month = datetime.now().month
     # Filter to current calendar year — ALL statuses (booked, progress, done, completed)
@@ -570,12 +570,14 @@ def get_dashboard_data(
         else:
             rev, trips_n = 0.0, 0
             name = datetime(2024, m, 1).strftime("%B")
+        target_amt = get_target_for_month(current_year, m)
         month_targets.append({
             "month": name,
             "revenue": rev,
             "trips": trips_n,
-            "target": TARGET,
-            "status": "green" if rev >= TARGET else "red",
+            "target": target_amt,
+            "pct": round((rev / target_amt * 100) if target_amt > 0 else 0, 1),
+            "status": "green" if rev >= target_amt else "red",
         })
 
     # ── Profit by duration ──────────────────────────────────────────────────
