@@ -538,17 +538,25 @@ def get_dashboard_data(
 
     # ── Month targets ───────────────────────────────────────────────────────
     TARGET = 250_000
+    current_year  = datetime.now().year
     current_month = datetime.now().month
-    # Build a monthly lookup from ALL completed trips (unfiltered) for target cards
+    # Filter to current calendar year only for accurate monthly targets
+    if not df_completed_all.empty and "Year" in df_completed_all.columns:
+        df_targets = df_completed_all[
+            df_completed_all["Year"].astype(str).str.strip().str.split(".").str[0] == str(current_year)
+        ]
+    else:
+        df_targets = df_completed_all
+
     monthly_all = (
-        df_completed_all.groupby("MonthNum")
+        df_targets.groupby("MonthNum")
         .agg(
             Month=("MonthName", "first"),
             Trips=(REVENUE_COL, "count"),
             Revenue=(REVENUE_COL, "sum"),
         )
         .reset_index()
-    ) if not df_completed_all.empty else pd.DataFrame()
+    ) if not df_targets.empty else pd.DataFrame()
 
     month_targets = []
     for i in range(3):
