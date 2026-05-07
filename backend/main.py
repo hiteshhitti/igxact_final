@@ -149,6 +149,61 @@ def trips_view(
     return query_trips(params.start, params.end, params.trip_id, params.mobile)
 
 
+# ─── Calendar ────────────────────────────────────────────────────────────────
+@app.get("/calendar")
+def get_calendar(
+    year:  int = Query(None),
+    month: int = Query(None),
+    user=Depends(verify_token),
+):
+    from services.sheets import load_trips_df
+    import pandas as pd
+    from datetime import datetime
+    now = datetime.now()
+    y = year  or now.year
+    m = month or now.month
+
+    df = load_trips_df()
+    if df.empty:
+        return {"trips": [], "year": y, "month": m}
+
+    # Parse End date
+    if "End date" in df.columns:
+        df["End date parsed"] = pd.to_datetime(df["End date"], format="%m/%d/%Y", errors="coerce")
+    else:
+        df["End date parsed"] = pd.NaT
+
+    # Keep trips that overlap with the given month
+    month_start = pd.Timestamp(y, m, 1)
+    import calendar
+    month_end   = pd.Timestamp(y, m, calendar.monthrange(y, m)[1])
+
+    if "Start Date" in df.columns:
+        mask = (
+            (df["Start Date"] <= month_end) &
+            (df["End date parsed"].isna() | (df["End date parsed"] >= month_start))
+        )
+        df = df[mask]
+
+    trips = []
+    for _, row in df.iterrows():
+        start = row.get("Start Date")
+        end   = row.get("End date parsed")
+        trips.append({
+            "trip_id":     str(row.get("trip id", "")),
+            "customer":    str(row.get("Customer Name", "")),
+            "from":        str(row.get("Trip From", "")),
+            "to":          str(row.get("Trip TO", "")),
+            "vehicle":     str(row.get("Vehicle Details", "")),
+            "status":      str(row.get("Status", "")),
+            "start_date":  start.strftime("%Y-%m-%d") if pd.notna(start) else "",
+            "end_date":    end.strftime("%Y-%m-%d")   if pd.notna(end)   else "",
+            "deal":        float(row.get("Deal Price", 0) or 0),
+        })
+
+    return {"trips": trips, "year": y, "month": m}
+
+
 # ─── Dashboard ────────────────────────────────────────────────────────────────
 @app.get("/data")
 def get_data(

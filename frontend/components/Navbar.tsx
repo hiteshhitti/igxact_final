@@ -43,6 +43,10 @@ export default function Navbar() {
         <button onClick={() => push("/trips")}>
           Trips
         </button>
+
+        <button onClick={() => push("/calendar")}>
+          Calendar
+        </button>
         )}
 
         {role === "admin" && (
