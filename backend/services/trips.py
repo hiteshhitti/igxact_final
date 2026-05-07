@@ -79,6 +79,102 @@ def get_vehicles() -> list[str]:
     ]
 
 
+def get_vehicles_with_targets() -> list[dict]:
+    """Return vehicles with their target amount and added_date."""
+    ws = open_worksheet_by_name("Vehichles")
+    try:
+        data = ws.get_all_records()
+    except Exception as e:
+        logger.error(f"Vehicles read error: {e}")
+        raise HTTPException(status_code=500, detail="Could not read vehicles")
+
+    result = []
+    for row in data:
+        name = str(row.get("Vehicle Name", "")).strip()
+        if not name:
+            continue
+        result.append({
+            "name":       name,
+            "target":     float(row.get("target", 0) or 0),
+            "added_date": str(row.get("added_date", "") or "").strip(),
+        })
+    return result
+
+
+def set_vehicle_target(vehicle_name: str, target: float) -> dict:
+    """Set target amount for a specific vehicle in the Vehichles sheet."""
+    ws = open_worksheet_by_name("Vehichles")
+    try:
+        all_values = ws.get_all_values()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Could not read vehicles: {e}")
+
+    if not all_values:
+        raise HTTPException(status_code=404, detail="Vehicles sheet is empty")
+
+    header = [h.strip().lower() for h in all_values[0]]
+
+    # Find or create target column
+    if "target" not in header:
+        # Add target column header
+        target_col = len(header) + 1
+        ws.update_cell(1, target_col, "target")
+        header.append("target")
+    else:
+        target_col = header.index("target") + 1  # 1-based
+
+    # Find added_date column
+    if "added_date" not in header:
+        date_col = len(header) + 1
+        ws.update_cell(1, date_col, "added_date")
+
+    # Find vehicle name column
+    if "vehicle name" not in header:
+        raise HTTPException(status_code=500, detail="Vehicle Name column not found")
+    name_col = header.index("vehicle name")  # 0-based for list
+
+    # Find the row for this vehicle
+    for row_idx, row in enumerate(all_values[1:], start=2):
+        cell_name = row[name_col].strip() if name_col < len(row) else ""
+        if cell_name.lower() == vehicle_name.lower():
+            ws.update_cell(row_idx, target_col, str(target))
+            return {"msg": "Target updated", "vehicle": vehicle_name, "target": target}
+
+    raise HTTPException(status_code=404, detail=f"Vehicle '{vehicle_name}' not found")
+
+
+def get_monthly_target_for_month(year: int, month: int) -> float:
+    """
+    Calculate monthly target = sum of targets of all vehicles
+    that were added on or before the last day of the given month.
+    If no added_date, vehicle is always included.
+    """
+    from datetime import date
+    import calendar
+    last_day = date(year, month, calendar.monthrange(year, month)[1])
+
+    vehicles = get_vehicles_with_targets()
+    total = 0.0
+    for v in vehicles:
+        added = v["added_date"]
+        if added:
+            try:
+                from datetime import datetime as _dt
+                added_dt = None
+                for fmt in ("%m/%d/%Y", "%m-%d-%Y", "%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y"):
+                    try:
+                        added_dt = _dt.strptime(added.strip(), fmt).date()
+                        break
+                    except Exception:
+                        continue
+                if added_dt and added_dt > last_day:
+                    continue  # vehicle added after this month — skip
+            except Exception:
+                pass  # if date parse fails, include vehicle
+        total += v["target"]
+    return total if total > 0 else 250_000
+
+
 def add_vehicle(name: str) -> dict:
     name = name.strip()
     if not name:
@@ -537,7 +633,7 @@ def get_dashboard_data(
     }
 
     # ── Month targets ───────────────────────────────────────────────────────
-    from services.targets import get_target_for_month
+    # target from vehicles sheet
     current_year  = datetime.now().year
     current_month = datetime.now().month
     # Filter to current calendar year — ALL statuses (booked, progress, done, completed)
@@ -570,7 +666,7 @@ def get_dashboard_data(
         else:
             rev, trips_n = 0.0, 0
             name = datetime(2024, m, 1).strftime("%B")
-        target_amt = get_target_for_month(current_year, m)
+        target_amt = get_monthly_target_for_month(current_year, m)
         month_targets.append({
             "month": name,
             "revenue": rev,

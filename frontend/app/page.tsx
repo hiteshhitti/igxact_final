@@ -172,21 +172,24 @@ export default function Home() {
   const insights      = data?.insights || {};
   const monthTargets  = data?.month_targets || [];
 
-  const fetchTargets = async (yr: number) => {
+  const fetchTargets = async (_yr?: number) => {
     try {
-      const res = await apiFetch(`/targets?year=${yr}`);
+      const res = await apiFetch("/vehicles/targets");
       const d = await res.json();
-      setAllTargets(d.targets || []);
+      setAllTargets(d.vehicles || []);
     } catch {}
   };
 
-  const saveTarget = async (monthNum: number, amount: number) => {
+  const saveTarget = async (vehicleName: string, amount: number) => {
     setSavingTarget(true);
     try {
-      const res = await apiFetch("/targets", { method: "POST", body: JSON.stringify({ year: targetYear, month_num: monthNum, target_amount: amount }) });
+      const res = await apiFetch(`/vehicles/${encodeURIComponent(vehicleName)}/target`, {
+        method: "PUT",
+        body: JSON.stringify({ target: amount }),
+      });
       if (!res.ok) { const d = await res.json(); toast.error(d.detail); return; }
-      toast.success("Target saved!");
-      fetchTargets(targetYear);
+      toast.success(`Target saved for ${vehicleName}!`);
+      fetchTargets();
     } catch (e: any) { toast.error(e.message); }
     finally { setSavingTarget(false); }
   };
@@ -755,58 +758,75 @@ export default function Home() {
         }}>
           <div onClick={e => e.stopPropagation()} style={{
             background:"rgba(255,255,255,0.97)", borderRadius:18,
-            padding:"28px 32px", width:"100%", maxWidth:560,
+            padding:"28px 32px", width:"100%", maxWidth:520,
             maxHeight:"90vh", overflowY:"auto",
             boxShadow:"0 20px 60px rgba(0,0,0,0.20)",
           }}>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:20 }}>
+            {/* Header */}
+            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
               <div>
-                <h2 style={{ fontFamily:"var(--font-display)", fontSize:20, fontWeight:800 }}>⚙️ Set Monthly Targets</h2>
-                <p style={{ fontSize:12, color:"var(--text-muted)", marginTop:3 }}>Click any amount and Tab/click away to save</p>
+                <h2 style={{ fontFamily:"var(--font-display)", fontSize:20, fontWeight:800 }}>⚙️ Vehicle Targets</h2>
+                <p style={{ fontSize:12, color:"var(--text-muted)", marginTop:3 }}>Monthly target = sum of all vehicle targets</p>
               </div>
               <button onClick={() => setShowTargetModal(false)} style={{ background:"none", border:"none", fontSize:22, cursor:"pointer", color:"var(--text-muted)" }}>×</button>
             </div>
-            <div style={{ display:"flex", alignItems:"center", gap:12, marginBottom:20 }}>
-              <label style={{ fontSize:12, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.07em" }}>Year</label>
-              <select value={targetYear} onChange={e => { const y = Number(e.target.value); setTargetYear(y); fetchTargets(y); }}
-                style={{ padding:"7px 12px", borderRadius:8, border:"1px solid rgba(0,0,0,0.12)", fontSize:14, background:"rgba(0,0,0,0.03)", fontFamily:"var(--font-body)" }}>
-                {[new Date().getFullYear() - 1, new Date().getFullYear(), new Date().getFullYear() + 1].map(y => (
-                  <option key={y} value={y}>{y}</option>
-                ))}
-              </select>
-            </div>
-            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
-              {allTargets.map((t: any) => (
-                <div key={t.month_num} style={{
-                  display:"grid", gridTemplateColumns:"120px 1fr auto",
+
+            {/* Vehicle rows */}
+            <div style={{ display:"flex", flexDirection:"column", gap:10, marginTop:20 }}>
+              {allTargets.length === 0 ? (
+                <p style={{ color:"var(--text-muted)", fontSize:13, textAlign:"center", padding:24 }}>No vehicles found</p>
+              ) : allTargets.map((v: any) => (
+                <div key={v.name} style={{
+                  display:"grid", gridTemplateColumns:"1fr auto auto",
                   alignItems:"center", gap:12,
-                  background:"rgba(0,0,0,0.025)", borderRadius:10, padding:"10px 14px",
+                  background:"rgba(0,0,0,0.025)", borderRadius:10, padding:"12px 16px",
+                  border:"1px solid rgba(0,0,0,0.06)",
                 }}>
-                  <p style={{ fontWeight:600, fontSize:14, color:"var(--text-primary)" }}>{t.month_name}</p>
+                  <div>
+                    <p style={{ fontWeight:700, fontSize:14, color:"var(--text-primary)" }}>🚗 {v.name}</p>
+                    {v.added_date && <p style={{ fontSize:11, color:"var(--text-muted)", marginTop:2 }}>Added: {v.added_date}</p>}
+                  </div>
                   <div style={{ display:"flex", alignItems:"center", gap:6 }}>
-                    <span style={{ fontSize:14, color:"var(--text-muted)" }}>₹</span>
+                    <span style={{ fontSize:14, color:"var(--text-muted)", fontWeight:600 }}>₹</span>
                     <input
                       type="number"
-                      defaultValue={t.target_amount}
-                      onBlur={e => saveTarget(t.month_num, Number(e.target.value))}
+                      defaultValue={v.target || 0}
+                      onBlur={e => saveTarget(v.name, Number(e.target.value))}
                       style={{
-                        width:"100%", padding:"7px 10px", borderRadius:8,
-                        border:"1px solid rgba(0,0,0,0.10)", background:"white",
-                        fontSize:14, fontFamily:"var(--font-body)", outline:"none",
+                        width:110, padding:"7px 10px", borderRadius:8,
+                        border:"1px solid rgba(0,0,0,0.12)", background:"white",
+                        fontSize:14, fontFamily:"var(--font-body)", outline:"none", textAlign:"right",
                       }}
                     />
                   </div>
                   <span style={{
-                    fontSize:11, fontWeight:700, padding:"3px 10px", borderRadius:20,
-                    background: t.target_amount > 0 ? "rgba(37,99,235,0.1)" : "rgba(0,0,0,0.06)",
-                    color: t.target_amount > 0 ? "var(--accent-primary)" : "var(--text-muted)",
+                    fontSize:12, fontWeight:700, padding:"3px 10px", borderRadius:20,
+                    background: v.target > 0 ? "rgba(37,99,235,0.1)" : "rgba(0,0,0,0.05)",
+                    color: v.target > 0 ? "var(--accent-primary)" : "var(--text-muted)",
                     whiteSpace:"nowrap",
                   }}>
-                    {t.target_amount > 0 ? `₹${Number(t.target_amount).toLocaleString("en-IN")}` : "Default"}
+                    {v.target > 0 ? `₹${Number(v.target).toLocaleString("en-IN")}` : "Not set"}
                   </span>
                 </div>
               ))}
             </div>
+
+            {/* Total */}
+            {allTargets.length > 0 && (
+              <div style={{
+                marginTop:16, padding:"14px 16px", borderRadius:10,
+                background:"rgba(34,197,94,0.07)", border:"1px solid rgba(34,197,94,0.2)",
+                display:"flex", justifyContent:"space-between", alignItems:"center",
+              }}>
+                <p style={{ fontWeight:700, fontSize:14, color:"var(--text-primary)" }}>Monthly Total Target</p>
+                <p style={{ fontWeight:800, fontSize:18, color:"var(--accent-green)", fontFamily:"var(--font-display)" }}>
+                  ₹{allTargets.reduce((s: number, v: any) => s + (Number(v.target) || 0), 0).toLocaleString("en-IN")}
+                </p>
+              </div>
+            )}
+            <p style={{ fontSize:11, color:"var(--text-muted)", marginTop:12, textAlign:"center" }}>
+              💡 Tab or click away to save. New vehicles added later won't affect past months.
+            </p>
           </div>
         </div>
       )}

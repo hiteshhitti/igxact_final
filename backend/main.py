@@ -20,6 +20,8 @@ from services.trips import (
     get_dashboard_data,
     get_sheet_columns,
     get_vehicles,
+    get_vehicles_with_targets,
+    set_vehicle_target,
     query_trips,
     update_trip,
 )
@@ -85,6 +87,22 @@ def list_vehicles(user=Depends(verify_token)):
 @app.post("/vehicles", status_code=201)
 def create_vehicle(body: VehicleCreate, user=Depends(verify_token)):
     return add_vehicle(body.name)
+
+
+@app.get("/vehicles/targets")
+def list_vehicle_targets(user=Depends(verify_token)):
+    """Return all vehicles with their target amounts."""
+    return {"vehicles": get_vehicles_with_targets()}
+
+
+@app.put("/vehicles/{vehicle_name}/target")
+def update_vehicle_target(vehicle_name: str, body: dict, user=Depends(require_admin)):
+    """Set target amount for a specific vehicle."""
+    target = float(body.get("target", 0) or 0)
+    if target < 0:
+        from fastapi import HTTPException
+        raise HTTPException(status_code=400, detail="Target must be positive")
+    return set_vehicle_target(vehicle_name, target)
 
 
 # ─── Trips ────────────────────────────────────────────────────────────────────
