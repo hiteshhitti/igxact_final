@@ -144,35 +144,9 @@ def set_vehicle_target(vehicle_name: str, target: float) -> dict:
 
 
 def get_monthly_target_for_month(year: int, month: int) -> float:
-    """
-    Calculate monthly target = sum of targets of all vehicles
-    that were added on or before the last day of the given month.
-    If no added_date, vehicle is always included.
-    """
-    from datetime import date
-    import calendar
-    last_day = date(year, month, calendar.monthrange(year, month)[1])
-
+    """Monthly target = sum of targets of ALL vehicles."""
     vehicles = get_vehicles_with_targets()
-    total = 0.0
-    for v in vehicles:
-        added = v["added_date"]
-        if added:
-            try:
-                from datetime import datetime as _dt
-                added_dt = None
-                for fmt in ("%m/%d/%Y", "%m-%d-%Y", "%Y-%m-%d", "%d-%m-%Y", "%d/%m/%Y"):
-                    try:
-                        added_dt = _dt.strptime(added.strip(), fmt).date()
-                        break
-                    except Exception:
-                        continue
-                if added_dt and added_dt > last_day:
-                    continue  # vehicle added after this month — skip
-            except Exception:
-                pass  # if date parse fails, include vehicle
-        total += v["target"]
-    return total if total > 0 else 250_000
+    return sum(v["target"] for v in vehicles)
 
 
 def add_vehicle(name: str) -> dict:
