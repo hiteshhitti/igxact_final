@@ -119,6 +119,11 @@ export default function Home() {
   const [loading, setLoading]       = useState(true);
   const [error, setError]           = useState<string | null>(null);
   const [selectedTrip, setSelectedTrip] = useState<any>(null);
+  const [showTargetModal, setShowTargetModal] = useState(false);
+  const [targetYear, setTargetYear]           = useState(new Date().getFullYear());
+  const [allTargets, setAllTargets]           = useState<any[]>([]);
+  const [savingTarget, setSavingTarget]       = useState(false);
+  const [role]                                = useState(() => (sessionStorage.getItem("role") || "").toLowerCase());
   const { push } = useSmoothRouter();
   const router = useRouter();
 
@@ -166,11 +171,6 @@ export default function Home() {
   const otherExpenses = (data?.cost_breakdown || []).find((c: any) => c.name === "Other Expenses")?.value || 0;
   const insights      = data?.insights || {};
   const monthTargets  = data?.month_targets || [];
-  const [showTargetModal, setShowTargetModal] = useState(false);
-  const [targetYear, setTargetYear]           = useState(new Date().getFullYear());
-  const [allTargets, setAllTargets]           = useState<any[]>([]);
-  const [savingTarget, setSavingTarget]       = useState(false);
-  const [role]                                = useState(() => (sessionStorage.getItem("role") || "").toLowerCase());
 
   const fetchTargets = async (yr: number) => {
     try {
