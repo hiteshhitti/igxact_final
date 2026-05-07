@@ -123,7 +123,7 @@ export default function Home() {
   const [targetYear, setTargetYear]           = useState(new Date().getFullYear());
   const [allTargets, setAllTargets]           = useState<any[]>([]);
   const [savingTarget, setSavingTarget]       = useState(false);
-  const [role]                                = useState(() => (sessionStorage.getItem("role") || "").toLowerCase());
+  const [role]                                = useState(() => typeof window !== "undefined" ? (sessionStorage.getItem("role") || "").toLowerCase() : "");
   const { push } = useSmoothRouter();
   const router = useRouter();
 
