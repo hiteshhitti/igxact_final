@@ -23,6 +23,7 @@ const tooltipStyle = {
 export default function MonthlyPage() {
   const [data, setData]         = useState<any>(null);
   const now = new Date();
+  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
   const [fromDate, setFromDate] = useState<Date | null>(new Date(now.getFullYear(), now.getMonth(), 1));
   const [toDate, setToDate]     = useState<Date | null>(new Date(now.getFullYear(), now.getMonth() + 1, 0));
   const [loading, setLoading]   = useState(false);
@@ -98,23 +99,43 @@ useEffect(() => {
 
         {/* Filters */}
         <section className="section">
-          {/* Quick month buttons */}
-          <div style={{ display:"flex", gap:6, flexWrap:"wrap", marginBottom:12 }}>
-            {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m, i) => {
-              const yr = new Date().getFullYear();
-              const isActive = fromDate && fromDate.getMonth() === i && fromDate.getFullYear() === yr;
-              return (
-                <button key={m} onClick={() => {
-                  setFromDate(new Date(yr, i, 1));
-                  setToDate(new Date(yr, i + 1, 0));
+          {/* Year + Month quick selectors */}
+          <div style={{ display:"flex", flexDirection:"column", gap:10, marginBottom:12 }}>
+            {/* Year selector */}
+            <div style={{ display:"flex", gap:6, alignItems:"center" }}>
+              <span style={{ fontSize:12, fontWeight:700, color:"var(--text-muted)", textTransform:"uppercase", letterSpacing:"0.07em", marginRight:4 }}>Year:</span>
+              {[now.getFullYear() - 1, now.getFullYear(), now.getFullYear() + 1].map(yr => (
+                <button key={yr} onClick={() => {
+                  setSelectedYear(yr);
+                  // Keep same month, change year
+                  const activeMonth = fromDate ? fromDate.getMonth() : now.getMonth();
+                  setFromDate(new Date(yr, activeMonth, 1));
+                  setToDate(new Date(yr, activeMonth + 1, 0));
                 }} style={{
-                  padding:"5px 12px", borderRadius:8, fontSize:12, fontWeight:600, cursor:"pointer",
-                  background: isActive ? "var(--accent-primary)" : "rgba(255,255,255,0.7)",
-                  color: isActive ? "#fff" : "var(--text-muted)",
-                  border: isActive ? "none" : "1px solid rgba(0,0,0,0.10)",
-                }}>{m} {yr}</button>
-              );
-            })}
+                  padding:"5px 14px", borderRadius:8, fontSize:13, fontWeight:700, cursor:"pointer",
+                  background: selectedYear === yr ? "var(--accent-primary)" : "rgba(255,255,255,0.7)",
+                  color: selectedYear === yr ? "#fff" : "var(--text-muted)",
+                  border: selectedYear === yr ? "none" : "1px solid rgba(0,0,0,0.10)",
+                }}>{yr}</button>
+              ))}
+            </div>
+            {/* Month buttons */}
+            <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+              {["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"].map((m, i) => {
+                const isActive = fromDate && fromDate.getMonth() === i && fromDate.getFullYear() === selectedYear;
+                return (
+                  <button key={m} onClick={() => {
+                    setFromDate(new Date(selectedYear, i, 1));
+                    setToDate(new Date(selectedYear, i + 1, 0));
+                  }} style={{
+                    padding:"5px 12px", borderRadius:8, fontSize:12, fontWeight:600, cursor:"pointer",
+                    background: isActive ? "var(--accent-primary)" : "rgba(255,255,255,0.7)",
+                    color: isActive ? "#fff" : "var(--text-muted)",
+                    border: isActive ? "none" : "1px solid rgba(0,0,0,0.10)",
+                  }}>{m}</button>
+                );
+              })}
+            </div>
           </div>
           <div style={{ display: "flex", gap: 12, alignItems: "center", flexWrap: "wrap", background: "var(--bg-card)", border: "1px solid var(--border-subtle)", borderRadius: 14, padding: "16px 20px" }}>
             <p style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 600, marginRight: 4 }}>Date range:</p>
