@@ -199,8 +199,12 @@ export default function TripsPage() {
 
     // ── Expense check when marking Completed ────────────────────────────
     if (form["Status"] === "completed") {
-      const EXPENSE_FIELDS = ["Fuel", "Tolls & Taxes", "Parking", "Driver Allowance", "Other Expenses", "Sales Commission"];
-      const missingExpenses = EXPENSE_FIELDS.filter(f => !form[f] || num(form[f]) === 0);
+      const REQUIRED_NONZERO = ["Fuel", "Tolls & Taxes", "Parking", "Driver Allowance", "Sales Commission"];
+      const ALLOW_ZERO       = ["Other Expenses"];
+      const missingExpenses = [
+        ...REQUIRED_NONZERO.filter(f => !form[f] || String(form[f]).trim() === "" || num(form[f]) === 0),
+        ...ALLOW_ZERO.filter(f => form[f] === undefined || form[f] === null || String(form[f]).trim() === ""),
+      ];
       if (missingExpenses.length > 0) {
         const msg = `Cannot mark Completed — missing expenses: ${missingExpenses.join(", ")}. Mark as Done if expenses are pending.`;
         setFormErrors(msg); toast.error(msg); return;
