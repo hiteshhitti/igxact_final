@@ -169,7 +169,7 @@ def get_calendar(
 
     # Parse End date — flexible format
     if "End date" in df.columns:
-        df["End date parsed"] = pd.to_datetime(df["End date"], infer_datetime_format=True, errors="coerce")
+        df["End date parsed"] = pd.to_datetime(df["End date"], errors="coerce")
     else:
         df["End date parsed"] = pd.NaT
 

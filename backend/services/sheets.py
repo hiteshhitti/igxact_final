@@ -183,7 +183,7 @@ def load_trips_df() -> pd.DataFrame:
     if "Start Date" in df.columns:
         # Try multiple formats — sheet may store as MM/DD/YYYY or ISO or with time
         df["Start Date"] = pd.to_datetime(
-            df["Start Date"], infer_datetime_format=True, errors="coerce"
+            df["Start Date"], errors="coerce"
         )
 
     if "Cust. Contact Number" in df.columns:
