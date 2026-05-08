@@ -39,9 +39,15 @@ useEffect(() => {
   setLoading(true);
 
   const endpoint = role === "admin" ? "/trips" : "/trips-view";
+  const toLocalDate = (d: Date) => {
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`;
+  };
   const params = new URLSearchParams();
-  if (fromDate) params.set("start", fromDate.toISOString().split("T")[0]);
-  if (toDate)   params.set("end",   toDate.toISOString().split("T")[0]);
+  if (fromDate) params.set("start", toLocalDate(fromDate));
+  if (toDate)   params.set("end",   toLocalDate(toDate));
   const qs = params.toString();
 
   apiFetch(`${endpoint}${qs ? "?" + qs : ""}`)
