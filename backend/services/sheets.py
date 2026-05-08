@@ -181,8 +181,9 @@ def load_trips_df() -> pd.DataFrame:
 
     # Parse dates
     if "Start Date" in df.columns:
+        # Try multiple formats — sheet may store as MM/DD/YYYY or ISO or with time
         df["Start Date"] = pd.to_datetime(
-            df["Start Date"], format="%m/%d/%Y", errors="coerce"
+            df["Start Date"], infer_datetime_format=True, errors="coerce"
         )
 
     if "Cust. Contact Number" in df.columns:
@@ -198,18 +199,32 @@ def load_trips_df() -> pd.DataFrame:
         "Number of Days",
         "Total Cash",
         "Total Bank",
+        "Total",
+        "Per Day Cost",
         "Booking Amt/Advance Cash",
         "Booking Amt/Advance Bank",
+        "2nd Payment Cash Bank",
+        "2nd Payment Bank",
+        "Final Payment Mode Cash",
+        "Final Payment Mode Bank",
         "Difference",
     ]
     for col in all_numeric:
         df[col] = clean_col(df, col)
 
-    # Derive convenience columns
-    df["AdvanceCash"] = df["Booking Amt/Advance Cash"] if "Booking Amt/Advance Cash" in df.columns else 0
-    df["AdvanceBank"] = df["Booking Amt/Advance Bank"] if "Booking Amt/Advance Bank" in df.columns else 0
-    df["Received"] = df["AdvanceCash"] + df["AdvanceBank"]
-    df["Pending"] = df[REVENUE_COL] - df["Received"]
+    # Derive convenience columns — sum ALL payment columns
+    def _pc(col):
+        return clean_col(df, col) if col in df.columns else pd.Series(0, index=df.index)
+
+    df["Received"] = (
+        _pc("Booking Amt/Advance Cash") +
+        _pc("Booking Amt/Advance Bank") +
+        _pc("2nd Payment Cash Bank") +
+        _pc("2nd Payment Bank") +
+        _pc("Final Payment Mode Cash") +
+        _pc("Final Payment Mode Bank")
+    )
+    df["Pending"] = (df[REVENUE_COL] - df["Received"]).clip(lower=0)
 
     # Normalise Status
     if "Status" not in df.columns:

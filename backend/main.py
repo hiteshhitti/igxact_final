@@ -167,21 +167,18 @@ def get_calendar(
     if df.empty:
         return {"trips": [], "year": y, "month": m}
 
-    # Parse End date
+    # Parse End date — flexible format
     if "End date" in df.columns:
-        df["End date parsed"] = pd.to_datetime(df["End date"], format="%m/%d/%Y", errors="coerce")
+        df["End date parsed"] = pd.to_datetime(df["End date"], infer_datetime_format=True, errors="coerce")
     else:
         df["End date parsed"] = pd.NaT
 
-    # Keep trips that overlap with the given month
-    month_start = pd.Timestamp(y, m, 1)
-    import calendar
-    month_end   = pd.Timestamp(y, m, calendar.monthrange(y, m)[1])
-
+    # Only show trips that START in the given month
+    # (a trip starting in May and ending in June belongs to May)
     if "Start Date" in df.columns:
         mask = (
-            (df["Start Date"] <= month_end) &
-            (df["End date parsed"].isna() | (df["End date parsed"] >= month_start))
+            (df["Start Date"].dt.year  == y) &
+            (df["Start Date"].dt.month == m)
         )
         df = df[mask]
 

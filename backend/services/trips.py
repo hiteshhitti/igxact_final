@@ -296,7 +296,9 @@ def filter_trips(
             pass
     if end:
         try:
-            df = df[df["Start Date"] <= pd.to_datetime(end)]
+            # Use end of day (23:59:59) so trips on the last day are included
+            end_dt = pd.to_datetime(end) + pd.Timedelta(hours=23, minutes=59, seconds=59)
+            df = df[df["Start Date"] <= end_dt]
         except Exception:
             pass
     if mobile:
