@@ -11,7 +11,6 @@ from auth import router as auth_router
 from crm_router import crm_router
 from records_router import records_router
 from targets_router import targets_router
-from database import Base, engine
 from middleware import RequestLoggingMiddleware
 from schemas.trip import DashboardQueryParams, TripCreate, TripUpdate, TripQueryParams, VehicleCreate
 from services.trips import (
@@ -55,7 +54,6 @@ app.include_router(auth_router)
 app.include_router(crm_router)
 app.include_router(records_router)
 app.include_router(targets_router)
-Base.metadata.create_all(bind=engine)
 
 
 # ─── Global validation error handler ─────────────────────────────────────────
